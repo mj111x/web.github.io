@@ -1,25 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Current URL with www</title>
+    <title>폴링 상태 확인</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            margin-top: 50px;
+        }
+        .status {
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 20px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
 </head>
 <body>
-    <h2>Current Page URL</h2>
-    <div id="current-url">Loading...</div>
+    <h1>웹 페이지 폴링 상태</h1>
+    <div id="status" class="status">상태를 확인 중...</div>
 
     <script>
-        // 현재 URL에서 www를 포함하여 표시
-        let currentUrl = window.location.href;
+        // 상태를 주기적으로 업데이트하는 함수
+        const updateStatus = async () => {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
 
-        // 'www'가 없으면 추가 (도메인에 따라 이 부분을 수정할 수 있음)
-        if (!currentUrl.includes('www')) {
-            currentUrl = currentUrl.replace('://', '://www.');
-        }
+                const statusElement = document.getElementById('status');
 
-        // 'current-url' div에 URL 표시
-        document.getElementById('current-url').textContent = `Page URL: ${currentUrl}`;
+                if (data.status === 'success') {
+                    statusElement.textContent = data.message;
+                    statusElement.classList.remove('error');
+                    statusElement.classList.add('success');
+                } else {
+                    statusElement.textContent = data.message;
+                    statusElement.classList.remove('success');
+                    statusElement.classList.add('error');
+                }
+            } catch (error) {
+                console.error('Error fetching status:', error);
+            }
+        };
+
+        // 페이지 로드 시 상태 업데이트
+        updateStatus();
+
+        // 10초마다 상태 업데이트
+        setInterval(updateStatus, 10000);
     </script>
 </body>
 </html>
