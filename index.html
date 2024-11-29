@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Current URL with www</title>
+</head>
+<body>
+    <h2>Current Page URL</h2>
+    <div id="current-url">Loading...</div>
+
+    <script>
+        // 현재 URL에서 www를 포함하여 표시
+        let currentUrl = window.location.href;
+
+        // 'www'가 없으면 추가 (도메인에 따라 이 부분을 수정할 수 있음)
+        if (!currentUrl.includes('www')) {
+            currentUrl = currentUrl.replace('://', '://www.');
+        }
+
+        // 'current-url' div에 URL 표시
+        document.getElementById('current-url').textContent = `Page URL: ${currentUrl}`;
+    </script>
+</body>
+</html>
