@@ -3,62 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>폴링 상태 확인</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            text-align: center;
-            margin-top: 50px;
-        }
-        .status {
-            padding: 20px;
-            border-radius: 10px;
-            display: inline-block;
-            margin-top: 20px;
-        }
-        .success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-    </style>
+    <title>실시간 상태 확인</title>
+    <link rel="stylesheet" href="styles.css"> <!-- CSS 파일 추가 -->
 </head>
 <body>
     <h1>웹 페이지 폴링 상태</h1>
     <div id="status" class="status">상태를 확인 중...</div>
 
-    <script>
-        // 상태를 주기적으로 업데이트하는 함수
-        const updateStatus = async () => {
-            try {
-                const response = await fetch('/status');
-                const data = await response.json();
-
-                const statusElement = document.getElementById('status');
-
-                if (data.status === 'success') {
-                    statusElement.textContent = data.message;
-                    statusElement.classList.remove('error');
-                    statusElement.classList.add('success');
-                } else {
-                    statusElement.textContent = data.message;
-                    statusElement.classList.remove('success');
-                    statusElement.classList.add('error');
-                }
-            } catch (error) {
-                console.error('Error fetching status:', error);
-            }
-        };
-
-        // 페이지 로드 시 상태 업데이트
-        updateStatus();
-
-        // 10초마다 상태 업데이트
-        setInterval(updateStatus, 10000);
-    </script>
+    <script src="app.js"></script> <!-- 외부 JavaScript 파일 추가 -->
 </body>
 </html>
