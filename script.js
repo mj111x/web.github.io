@@ -5,8 +5,7 @@ const statusElement = document.getElementById('status');
 // 폴링 함수
 const fetchStatus = async () => {
     try {
-        // 폴링 데이터 받기 (여기서는 GitHub Pages에 대한 요청 예시)
-        const response = await fetch('/path_to_polling_data'); // 실제 라즈베리 파이가 데이터를 보내는 API URL로 교체
+        const response = await fetch('https://your-server-ip-or-domain/path_to_polling_data'); // Flask 서버의 API URL
         const data = await response.json();  // JSON 응답 파싱
 
         // 서버에서 받은 데이터에 따라 상태 업데이트
@@ -26,4 +25,4 @@ const fetchStatus = async () => {
 };
 
 // 폴링 시작
-setInterval(fetchStatus, pollingInterval);  // 일정 시간 간격으로 데이터 받아오기
+setInterval(fetchStatus, pollingInterval);  // 5초마다 폴링
