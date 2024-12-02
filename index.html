@@ -3,14 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Polling 예제</title>
-    <link rel="stylesheet" href="styles.css">  <!-- CSS 파일 연결 -->
+    <title>푸시 알림 예제</title>
 </head>
 <body>
-    <h1>Flask 서버로부터 받은 시간</h1>
-    <p id="time">시간을 가져오는 중...</p>
-    <div id="status">서버 연결 상태: 대기 중...</div>  <!-- 서버 상태 표시 -->
+    <h1>푸시 알림을 받을 준비 중...</h1>
+    
+    <script>
+        if ('Notification' in window && 'serviceWorker' in navigator) {
+            // 푸시 알림 권한 요청
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    console.log('푸시 알림 권한이 허용되었습니다.');
+                } else {
+                    console.log('푸시 알림 권한이 거부되었습니다.');
+                }
+            });
 
-    <script src="script.js"></script>  <!-- JavaScript 파일 연결 -->
+            // 서비스 워커 등록
+            navigator.serviceWorker.register('/script.js').then(registration => {
+                console.log('서비스 워커 등록 성공:', registration);
+            }).catch(error => {
+                console.error('서비스 워커 등록 실패:', error);
+            });
+        }
+    </script>
 </body>
 </html>
