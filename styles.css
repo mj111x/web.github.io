@@ -1,27 +1,20 @@
-/* 기본 스타일 */
 body {
     font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
     text-align: center;
+    background-color: #f4f4f4;
     margin-top: 50px;
 }
 
-/* 상태 표시 영역 */
-.status {
+h1 {
+    font-size: 2rem;
+    color: #333;
+}
+
+#status {
     padding: 20px;
+    font-size: 1.2rem;
+    margin-top: 20px;
     border-radius: 10px;
     display: inline-block;
-    margin-top: 20px;
-}
-
-/* 성공 상태 스타일 */
-.success {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-/* 에러 상태 스타일 */
-.error {
-    background-color: #f8d7da;
-    color: #721c24;
+    background-color: #e1e1e1;
 }

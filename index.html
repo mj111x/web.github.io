@@ -3,17 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>실시간 상태 확인</title>
-
-    <!-- 외부 CSS 파일 로드 -->
-    <link rel="stylesheet" href="styles.css">
-
+    <title>Flask-SocketIO 실시간 예제</title>
+    <link rel="stylesheet" href="styles.css">  <!-- CSS 링크 추가 -->
 </head>
 <body>
-    <h1>웹 페이지 폴링 상태</h1>
-    <div id="status" class="status">상태를 확인 중...</div>
+    <h1>실시간 상태 확인</h1>
+    <div id="status">서버 연결 대기 중...</div>
 
-    <!-- JavaScript 파일을 외부에서 로드 -->
-    <script src="script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="script.js"></script>  <!-- JavaScript 링크 추가 -->
 </body>
 </html>
