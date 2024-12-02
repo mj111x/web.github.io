@@ -1,20 +1,15 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WebSocket 연결 테스트</title>
-    <!-- 외부 CSS 파일 링크 -->
-    <link rel="stylesheet" href="styles.css">
+    <title>Central Server</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>WebSocket 연결 테스트</h1>
-        <div id="status" class="waiting">서버와 연결되지 않았습니다.</div>
-        <button id="connectButton">서버에 연결 요청</button>
-    </div>
+    <h1>Raspberry Pi 상태</h1>
+    <div id="raspberryPiList"></div>  <!-- Raspberry Pi 데이터를 출력할 부분 -->
 
-    <!-- External JavaScript 파일 링크 -->
     <script src="script.js"></script>
 </body>
 </html>

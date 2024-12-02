@@ -1,64 +1,27 @@
-/* 기본적인 레이아웃 설정 */
 body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f4f7fc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f9;
     color: #333;
-}
-
-/* 콘텐츠를 감싸는 컨테이너 */
-.container {
-    background-color: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    width: 350px;
+    padding: 20px;
 }
 
 h1 {
     color: #4CAF50;
-    font-size: 24px;
 }
 
-/* 상태 표시 */
-#status {
+#raspberryPiList {
     margin-top: 20px;
-    font-size: 16px;
-    font-weight: bold;
-    color: #666;
 }
 
-/* 버튼 스타일 */
-#connectButton {
-    margin-top: 30px;
-    padding: 10px 20px;
-    background-color: #4CAF50;
-    color: white;
-    font-size: 16px;
-    border: none;
+#raspberryPiList div {
+    background-color: #fff;
+    padding: 10px;
+    margin-bottom: 10px;
     border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-#connectButton:hover {
-    background-color: #45a049;
-}
-
-/* 상태 메시지 강조 */
-.connected {
-    color: green;
-}
-
-.disconnected {
-    color: red;
-}
-
-.waiting {
-    color: #f39c12;
+hr {
+    margin-top: 10px;
+    border: 1px solid #ddd;
 }
