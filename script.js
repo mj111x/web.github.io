@@ -1,5 +1,5 @@
 // app.js
-const socket = new WebSocket('https://secret-earth-58191-0764b559e52c.herokuapp.com/'); // 서버 URL
+const socket = new WebSocket('wss://secret-earth-58191-0764b559e52c.herokuapp.com/'); // 서버 URL
 
 socket.onopen = () => {
     console.log('서버에 연결됨');
