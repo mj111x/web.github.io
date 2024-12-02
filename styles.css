@@ -6,35 +6,35 @@
 }
 
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f5f5f5;
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f0f0;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    margin: 0;
 }
 
 .container {
     background-color: #fff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     width: 80%;
     max-width: 600px;
     padding: 20px;
+    text-align: center;
 }
 
 header {
-    text-align: center;
     margin-bottom: 20px;
 }
 
 h1 {
-    color: #333;
     font-size: 2em;
+    color: #333;
 }
 
 .controls {
-    text-align: center;
     margin-bottom: 20px;
 }
 
@@ -58,33 +58,20 @@ button:hover {
 }
 
 h2 {
-    color: #333;
     font-size: 1.5em;
+    color: #333;
     margin-bottom: 15px;
 }
 
-#raspberryPiList {
-    padding: 10px;
-    background-color: #e7e7e7;
-    border-radius: 5px;
-    max-height: 300px;
-    overflow-y: auto;
-}
-
-.raspberryPiItem {
+#raspberryPiInfo {
     background-color: #f9f9f9;
-    padding: 10px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-}
-
-.raspberryPiItem p {
-    font-size: 1em;
-    margin-bottom: 5px;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    text-align: left;
 }
 
 footer {
-    text-align: center;
     margin-top: 30px;
     font-size: 0.9em;
     color: #888;
