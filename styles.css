@@ -14,3 +14,22 @@ p {
     color: #555;
     margin-top: 20px;
 }
+
+#status {
+    margin-top: 20px;
+    font-size: 1.2em;
+    color: #333;
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.status-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
