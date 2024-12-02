@@ -3,28 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>웹 페이지 - Raspberry Pi 연결</title>
-    <link rel="stylesheet" href="styles.css">  <!-- CSS 스타일링 -->
+    <title>가장 가까운 Raspberry Pi 연결</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <header> 
-            <h1>웹 페이지 - Raspberry Pi 연결</h1>
-        </header>
-        <div class="controls">
-            <button id="pingButton">Ping 보내기</button>
-        </div>
-        <div class="raspberryPiStatus">
-            <h2>가장 가까운 Raspberry Pi 정보</h2>
-            <div id="raspberryPiInfo">
-                <p>현재 Raspberry Pi가 없습니다.</p>
-            </div>
-        </div>
-        <footer>
-            <p>&copy; 2024 Raspberry Pi 연결 시스템</p>
-        </footer>
+        <h1>가장 가까운 Raspberry Pi 연결</h1>
+        <div id="status" class="waiting">서버와 연결되지 않았습니다.</div>
+        <div id="raspberryInfo" class="info"></div>
+        <button id="connectButton">가장 가까운 Raspberry Pi에 연결</button>
     </div>
 
-    <script src="script.js"></script>  <!-- JavaScript 파일 연결 -->
+    <script src="script.js"></script>
 </body>
 </html>

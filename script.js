@@ -1,52 +1,60 @@
-const ws = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/:8080');  // WebSocket 서버 주소
-const pingButton = document.getElementById('pingButton');
-const raspberryPiInfo = document.getElementById('raspberryPiInfo');
+// 서버의 WebSocket URL
+const serverUrl = 'wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:8080';  // 서버 URL
+const socket = new WebSocket(serverUrl);  // WebSocket 객체 생성
 
-// WebSocket 연결 성공 시
-ws.onopen = function () {
-    console.log("서버에 연결되었습니다.");
+// WebSocket 연결이 열리면
+socket.onopen = () => {
+    console.log('서버에 연결됨');
+    document.getElementById('status').textContent = '서버와 연결됨. ping을 보냄.';
+    document.getElementById('status').classList.remove('waiting', 'disconnected');
+    document.getElementById('status').classList.add('connected');
+
+    // 서버에 ping 데이터 전송
+    const pingData = {
+        type: 'ping',
+        id: 'webPageId',  // 고유한 웹 페이지 ID
+        signalStrength: Math.random()  // 임의의 신호 강도 값
+    };
+    socket.send(JSON.stringify(pingData));
 };
 
-// WebSocket 연결이 닫히거나 문제가 생기면 재연결 시도
-ws.onclose = function () {
-    console.log("서버 연결이 끊어졌습니다. 재연결을 시도합니다...");
-    reconnectWebSocket();
+// WebSocket 연결이 오류가 발생했을 때
+socket.onerror = (error) => {
+    console.error('WebSocket 오류:', error);
+    document.getElementById('status').textContent = '서버와 연결 실패.';
+    document.getElementById('status').classList.remove('waiting', 'connected');
+    document.getElementById('status').classList.add('disconnected');
 };
 
-// 서버에서 메시지를 받을 때
-ws.onmessage = function (event) {
-    const message = JSON.parse(event.data);  // 받은 메시지를 JSON 객체로 변환
+// 서버로부터 메시지가 오면
+socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);  // 받은 메시지를 JSON 객체로 변환
+    console.log('서버로부터 받은 메시지:', data);
 
-    // 가장 가까운 Raspberry Pi 정보를 서버로부터 받았을 때
-    if (message.type === 'closestPi') {
-        console.log("가장 가까운 Raspberry Pi 정보:", message);
-        raspberryPiInfo.innerHTML = `
-            <p>Raspberry Pi ID: ${message.closestPiId}</p>
-            <p>Signal Strength: ${message.signalStrength}</p>
-            <p>Ping Time: ${new Date(message.pingTime).toLocaleString()}</p>
-        `;
+    // 서버가 Raspberry Pi의 offer를 보낸 경우
+    if (data.type === 'offer') {
+        console.log('가장 가까운 Raspberry Pi와 연결 요청');
+        const raspberryInfo = document.getElementById('raspberryInfo');
+        raspberryInfo.textContent = `가장 가까운 Raspberry Pi: ${data.closestPiId} (신호 강도: ${data.signalStrength})`;
+        document.getElementById('status').textContent = 'Raspberry Pi와 연결 요청!';
     }
 };
 
-// Ping 버튼 클릭 시 서버로 ping 메시지 전송
-pingButton.addEventListener('click', function () {
-    if (ws.readyState === WebSocket.OPEN) {
-        const message = {
-            type: 'ping',
-            id: 'webPage1',  // 웹 페이지의 고유 ID
-            signalStrength: Math.random() * 100  // 예시로 임의의 신호 강도 값
-        };
-        ws.send(JSON.stringify(message));  // 서버로 메시지 전송
-        console.log("Ping 전송:", message);
-    } else {
-        console.log("WebSocket 연결이 열려 있지 않습니다.");
-    }
+// WebSocket 연결이 종료되었을 때
+socket.onclose = () => {
+    console.log('서버와의 연결이 종료됨');
+    document.getElementById('status').textContent = '서버와 연결 종료됨.';
+    document.getElementById('status').classList.remove('waiting', 'connected');
+    document.getElementById('status').classList.add('disconnected');
+};
+
+// 연결 요청 버튼 클릭 시 처리
+document.getElementById('connectButton').addEventListener('click', () => {
+    // 서버로 연결 요청 메시지 전송
+    const connectMessage = {
+        type: 'connect',  // 'connect' 타입의 메시지
+        sdp: '웹 페이지에서 보낸 SDP 정보'  // WebRTC의 실제 SDP 정보 사용 필요
+    };
+    socket.send(JSON.stringify(connectMessage));
+    console.log('서버로 연결 요청 메시지 전송');
 });
-
-// WebSocket 연결이 끊어지면 다시 연결 시도
-function reconnectWebSocket() {
-    setTimeout(function () {
-        console.log("WebSocket 재연결 시도...");
-        ws = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/:8080');  // 서버 주소에 맞게 설정
-    }, 2000);  // 2초 후 재연결 시도
-}
