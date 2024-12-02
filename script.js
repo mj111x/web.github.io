@@ -1,45 +1,50 @@
-let socket;
+// WebSocket 연결
+const socket = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:8080');
 
-function connectToServer() {
-    // 서버와 연결
-    socket = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/');  // 서버 URL로 수정
+let raspberryPiList = document.getElementById("raspberryPiList");
+let connectButton = document.getElementById("connectButton");
 
-    socket.addEventListener('open', () => {
-        console.log("서버와 연결됨");
-        document.getElementById('connectButton').disabled = true;  // 연결 후 버튼 비활성화
-    });
+socket.onopen = function() {
+    console.log("WebSocket 서버에 연결되었습니다.");
 
-    socket.addEventListener('message', (event) => {
-        const data = JSON.parse(event.data);
-        console.log("서버로부터 받은 데이터:", data);
+    // 웹페이지 핑 보내기 (웹 페이지 고유 ID와 신호 강도 포함)
+    socket.send(JSON.stringify({
+        type: 'ping',
+        id: 'webPage1',
+        signalStrength: 80 // 신호 강도 예시 (실제 값은 변경 가능)
+    }));
+};
 
-        if (data.type === 'raspberryPiData') {
-            // Raspberry Pi 데이터를 화면에 표시
-            displayRaspberryPiData(data);
-        }
-    });
+// 서버에서 메시지를 받을 때
+socket.onmessage = function(event) {
+    const data = JSON.parse(event.data);
+    console.log("서버로부터 받은 데이터: ", data);
 
-    socket.addEventListener('close', () => {
-        console.log("서버와의 연결이 끊어졌습니다.");
-    });
+    if (data.type === 'raspberryPiStatus') {
+        updateRaspberryPiList(data.pis);
+    }
+};
 
-    socket.addEventListener('error', (error) => {
-        console.error("WebSocket 오류:", error);
+// Raspberry Pi 목록을 화면에 표시
+function updateRaspberryPiList(pis) {
+    raspberryPiList.innerHTML = ''; // 기존 목록 초기화
+
+    pis.forEach(pi => {
+        let piItem = document.createElement('div');
+        piItem.classList.add('raspberryPiItem');
+        piItem.innerHTML = `
+            <p><strong>Raspberry Pi ID:</strong> ${pi.id}</p>
+            <p><strong>Signal Strength:</strong> ${pi.signalStrength}</p>
+            <p><strong>Ping Time:</strong> ${new Date(pi.pingTime).toLocaleTimeString()}</p>
+        `;
+        raspberryPiList.appendChild(piItem);
     });
 }
 
-function displayRaspberryPiData(data) {
-    const raspberryPiList = document.getElementById('raspberryPiList');
-
-    // 기존에 표시된 내용을 지우고 새 데이터만 표시
-    const piElement = document.createElement('div');
-    piElement.classList.add('raspberryPiItem');
-    piElement.innerHTML = `
-        <p><strong>ID:</strong> ${data.id}</p>
-        <p><strong>Signal Strength:</strong> ${data.signalStrength}</p>
-        <p><strong>Ping Time:</strong> ${new Date(data.pingTime).toLocaleString()}</p>
-    `;
-
-    // 새 데이터 추가
-    raspberryPiList.appendChild(piElement);
-}
+// '가장 가까운 Raspberry Pi와 연결' 버튼 클릭 시
+connectButton.addEventListener('click', function() {
+    socket.send(JSON.stringify({
+        type: 'connect',
+        id: 'webPage1' // 웹 페이지 ID
+    }));
+});

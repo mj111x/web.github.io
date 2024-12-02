@@ -3,28 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raspberry Pi 연결 관리</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Raspberry Pi 연결 상태</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Raspberry Pi 연결 관리</h1>
+            <h1>Raspberry Pi 연결 상태</h1>
         </header>
 
         <div class="controls">
-            <button id="connectButton" onclick="connectToServer()">웹 페이지 연결</button>
+            <button id="connectButton">가장 가까운 Raspberry Pi와 연결</button>
         </div>
 
         <div class="raspberryPiStatus">
-            <h2>연결된 Raspberry Pi</h2>
-            <div id="raspberryPiList">
-                <!-- Raspberry Pi 데이터가 여기에 표시됩니다 -->
-            </div>
+            <h2>Raspberry Pi 상태</h2>
+            <div id="raspberryPiList"></div>
         </div>
 
         <footer>
-            <p>© 2024 Raspberry Pi 연결 관리 시스템</p>
+            <p>&copy; 2024 Raspberry Pi 관리 시스템</p>
         </footer>
     </div>
 
