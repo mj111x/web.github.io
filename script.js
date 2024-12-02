@@ -1,5 +1,5 @@
 // 서버의 WebSocket URL
-const serverUrl = 'wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:8080';  // 서버 URL
+const serverUrl = 'wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/:8080';  // 여기에 서버의 URL을 입력하세요.
 const socket = new WebSocket(serverUrl);  // WebSocket 객체 생성
 
 // WebSocket 연결이 열리면
@@ -13,7 +13,7 @@ socket.onopen = () => {
     const pingData = {
         type: 'ping',
         id: 'webPageId',  // 고유한 웹 페이지 ID
-        signalStrength: Math.random()  // 임의의 신호 강도 값
+        signalStrength: Math.random()  // 임의의 신호 강도 값 (실제 데이터에 맞게 수정 가능)
     };
     socket.send(JSON.stringify(pingData));
 };
@@ -33,9 +33,8 @@ socket.onmessage = (event) => {
 
     // 서버가 Raspberry Pi의 offer를 보낸 경우
     if (data.type === 'offer') {
-        console.log('가장 가까운 Raspberry Pi와 연결 요청');
-        const raspberryInfo = document.getElementById('raspberryInfo');
-        raspberryInfo.textContent = `가장 가까운 Raspberry Pi: ${data.closestPiId} (신호 강도: ${data.signalStrength})`;
+        console.log('가장 가까운 Raspberry Pi로 연결 요청');
+        // 실제로는 WebRTC 연결을 위한 처리 로직을 여기에 작성
         document.getElementById('status').textContent = 'Raspberry Pi와 연결 요청!';
     }
 };
@@ -50,7 +49,7 @@ socket.onclose = () => {
 
 // 연결 요청 버튼 클릭 시 처리
 document.getElementById('connectButton').addEventListener('click', () => {
-    // 서버로 연결 요청 메시지 전송
+    // 서버로 연결 요청 메시지 전송 (SDP 정보는 실제 WebRTC 연결을 위해 사용)
     const connectMessage = {
         type: 'connect',  // 'connect' 타입의 메시지
         sdp: '웹 페이지에서 보낸 SDP 정보'  // WebRTC의 실제 SDP 정보 사용 필요
