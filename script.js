@@ -1,4 +1,4 @@
-const ws = new WebSocket('ws://localhost:8080');  // WebSocket 서버 주소
+const ws = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/:8080');  // WebSocket 서버 주소
 const pingButton = document.getElementById('pingButton');
 const raspberryPiInfo = document.getElementById('raspberryPiInfo');
 
