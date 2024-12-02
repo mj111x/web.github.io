@@ -1,5 +1,5 @@
 // WebSocket 연결 및 메시지 처리
-const socket = new WebSocket('ws://localhost:8080');
+const socket = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/:8080');
 
 socket.onopen = () => {
     console.log("서버에 연결되었습니다.");
