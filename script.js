@@ -29,6 +29,9 @@ function displayRaspberryPiInfo(data) {
 
     // Raspberry Pi 정보 출력
     if (infoElement) {
+
+        const connectionTime = new Date(data.pingTime);  // 서버에서 받은 pingTime을 Date 객체로 변환
+        const formattedTime = connectionTime.toLocaleString();  // 로컬 시간 형식으로 변환
         infoElement.innerHTML = `
             <p><strong>Raspberry Pi ID:</strong> ${data.piId || '정보 없음'}</p>
             <p><strong>신호 강도:</strong> ${data.signalStrength ? data.signalStrength.toFixed(2) : '정보 없음'}</p>
