@@ -1,5 +1,5 @@
 // 서버의 WebSocket URL
-const serverUrl = 'wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:8080';  // 서버 URL
+const serverUrl = 'https://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:8080';  // 서버 URL
 const socket = new WebSocket(serverUrl);  // WebSocket 객체 생성
 
 // WebSocket 연결이 열리면
