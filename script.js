@@ -1,5 +1,5 @@
 // 서버의 WebSocket URL
-const socket = new WebSocket('ws://localhost:8080');  // 서버 주소를 맞게 수정하세요.
+const socket = new WebSocket('wss://localhost:8080');  // 서버 주소를 맞게 수정하세요.
 
 // WebSocket 연결 시 처리
 socket.onopen = () => {
