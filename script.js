@@ -37,21 +37,43 @@ socket.onmessage = (event) => {
         // 실제로는 WebRTC 연결을 위한 처리 로직을 여기에 작성
         document.getElementById('status').textContent = 'Raspberry Pi와 연결 요청!';
 
-    // 서버가 가장 가까운 Raspberry Pi 정보를 보낸 경우
-    } else if (data.type === 'closestPi') {
-        console.log('가장 가까운 Raspberry Pi 정보:', data);
-        // 서버로부터
-    }
-}
-socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);  // 받은 메시지를 JSON 객체로 변환
-    console.log('서버로부터 받은 메시지:', data);
-
-    // 서버가 Raspberry Pi의 offer를 보낸 경우
-    if (data.type === 'offer') {
-        console.log('가장 가까운 Raspberry Pi로 연결 요청');
-        // 웹 페이지에 Raspberry Pi 정보 출력
-        document.getElementById('status').textContent = `가장 가까운 Raspberry Pi: ${data.piId}, 신호 강도: ${data.signalStrength}`;
-        // WebRTC 연결을 위한 실제 로직을 여기에 작성
+        // Raspberry Pi의 정보 출력 (예: 라즈베리파이 ID와 신호 강도)
+        displayRaspberryPiInfo(data);
     }
 };
+
+// 웹 페이지에 Raspberry Pi 정보를 표시하는 함수
+function displayRaspberryPiInfo(data) {
+    // 예시: Raspberry Pi 정보 출력
+    const piInfoContainer = document.createElement('div');
+    piInfoContainer.classList.add('raspberryPiInfo');
+    
+    const piInfoText = `
+        <h3>가장 가까운 Raspberry Pi 정보</h3>
+        <p><strong>ID:</strong> ${data.id}</p>
+        <p><strong>신호 강도:</strong> ${data.signalStrength}</p>
+        <p><strong>연결 시간:</strong> ${new Date(data.pingTime).toLocaleString()}</p>
+    `;
+
+    piInfoContainer.innerHTML = piInfoText;
+    document.body.appendChild(piInfoContainer);  // 페이지에 추가
+};
+
+// WebSocket 연결이 종료되었을 때
+socket.onclose = () => {
+    console.log('서버와의 연결이 종료됨');
+    document.getElementById('status').textContent = '서버와 연결 종료됨.';
+    document.getElementById('status').classList.remove('waiting', 'connected');
+    document.getElementById('status').classList.add('disconnected');
+};
+
+// 연결 요청 버튼 클릭 시 처리
+document.getElementById('connectButton').addEventListener('click', () => {
+    // 서버로 연결 요청 메시지 전송 (SDP 정보는 실제 WebRTC 연결을 위해 사용)
+    const connectMessage = {
+        type: 'connect',  // 'connect' 타입의 메시지
+        sdp: '웹 페이지에서 보낸 SDP 정보'  // WebRTC의 실제 SDP 정보 사용 필요
+    };
+    socket.send(JSON.stringify(connectMessage));
+    console.log('서버로 연결 요청 메시지 전송');
+});

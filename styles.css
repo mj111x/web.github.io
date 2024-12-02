@@ -1,64 +1,19 @@
-/* 기본적인 레이아웃 설정 */
-body {
-    font-family: 'Arial', sans-serif;
-    background-color: #f4f7fc;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-    color: #333;
-}
-
-/* 콘텐츠를 감싸는 컨테이너 */
-.container {
-    background-color: white;
-    padding: 30px;
+/* Raspberry Pi 정보 출력 스타일 */
+.raspberryPiInfo {
+    background-color: #f1f1f1;
+    padding: 20px;
+    margin-top: 20px;
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    width: 350px;
+    text-align: left;
 }
 
-h1 {
+.raspberryPiInfo h3 {
     color: #4CAF50;
-    font-size: 24px;
+    font-size: 20px;
 }
 
-/* 상태 표시 */
-#status {
-    margin-top: 20px;
+.raspberryPiInfo p {
     font-size: 16px;
-    font-weight: bold;
-    color: #666;
-}
-
-/* 버튼 스타일 */
-#connectButton {
-    margin-top: 30px;
-    padding: 10px 20px;
-    background-color: #4CAF50;
-    color: white;
-    font-size: 16px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
-#connectButton:hover {
-    background-color: #45a049;
-}
-
-/* 상태 메시지 강조 */
-.connected {
-    color: green;
-}
-
-.disconnected {
-    color: red;
-}
-
-.waiting {
-    color: #f39c12;
+    color: #333;
 }
