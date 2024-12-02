@@ -43,3 +43,15 @@ socket.onmessage = (event) => {
         // 서버로부터
     }
 }
+socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);  // 받은 메시지를 JSON 객체로 변환
+    console.log('서버로부터 받은 메시지:', data);
+
+    // 서버가 Raspberry Pi의 offer를 보낸 경우
+    if (data.type === 'offer') {
+        console.log('가장 가까운 Raspberry Pi로 연결 요청');
+        // 웹 페이지에 Raspberry Pi 정보 출력
+        document.getElementById('status').textContent = `가장 가까운 Raspberry Pi: ${data.piId}, 신호 강도: ${data.signalStrength}`;
+        // WebRTC 연결을 위한 실제 로직을 여기에 작성
+    }
+};
