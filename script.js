@@ -1,38 +1,79 @@
-// WebSocket 연결 및 메시지 처리
-const socket = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/:8080');
+// 서버의 WebSocket URL
+const serverUrl = 'wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/:8080';  // 여기에 서버의 URL을 입력하세요.
+const socket = new WebSocket(serverUrl);  // WebSocket 객체 생성
 
+// WebSocket 연결이 열리면
 socket.onopen = () => {
-    console.log("서버에 연결되었습니다.");
-    // WebSocket 연결이 성공적으로 이루어진 후 클라이언트로부터 'ping' 메시지를 전송합니다.
+    console.log('서버에 연결됨');
+    document.getElementById('status').textContent = '서버와 연결됨. ping을 보냄.';
+    document.getElementById('status').classList.remove('waiting', 'disconnected');
+    document.getElementById('status').classList.add('connected');
+
+    // 서버에 ping 데이터 전송
     const pingData = {
         type: 'ping',
-        id: '웹페이지-001',  // 웹 페이지의 고유 ID 설정
-        signalStrength: Math.random() * 100  // 임의의 신호 강도 값 설정
+        id: 'webPageId',  // 고유한 웹 페이지 ID
+        signalStrength: Math.random()  // 임의의 신호 강도 값 (실제 데이터에 맞게 수정 가능)
     };
     socket.send(JSON.stringify(pingData));
 };
 
+// WebSocket 연결이 오류가 발생했을 때
+socket.onerror = (error) => {
+    console.error('WebSocket 오류:', error);
+    document.getElementById('status').textContent = '서버와 연결 실패.';
+    document.getElementById('status').classList.remove('waiting', 'connected');
+    document.getElementById('status').classList.add('disconnected');
+};
+
+// 서버로부터 메시지가 오면
 socket.onmessage = (event) => {
     const data = JSON.parse(event.data);  // 받은 메시지를 JSON 객체로 변환
     console.log('서버로부터 받은 메시지:', data);
 
-    // 서버로부터 받은 가장 가까운 Raspberry Pi 정보 처리
+    // 서버가 Raspberry Pi의 offer를 보낸 경우
     if (data.type === 'offer') {
-        // Raspberry Pi의 정보 (ID, 신호 강도, 연결 시간)을 화면에 표시
+        console.log('가장 가까운 Raspberry Pi로 연결 요청');
+        // 실제로는 WebRTC 연결을 위한 처리 로직을 여기에 작성
+        document.getElementById('status').textContent = 'Raspberry Pi와 연결 요청!';
+
+        // Raspberry Pi의 정보 출력 (예: 라즈베리파이 ID와 신호 강도)
         displayRaspberryPiInfo(data);
     }
 };
 
-// Raspberry Pi 정보 화면에 출력하는 함수
+// 웹 페이지에 Raspberry Pi 정보를 표시하는 함수
 function displayRaspberryPiInfo(data) {
-    const infoElement = document.getElementById('raspberryPiInfo');
+    // 예시: Raspberry Pi 정보 출력
+    const piInfoContainer = document.createElement('div');
+    piInfoContainer.classList.add('raspberryPiInfo');
+    
+    const piInfoText = `
+        <h3>가장 가까운 Raspberry Pi 정보</h3>
+        <p><strong>ID:</strong> ${data.id}</p>
+        <p><strong>신호 강도:</strong> ${data.signalStrength}</p>
+        <p><strong>연결 시간:</strong> ${new Date(data.pingTime).toLocaleString()}</p>
+    `;
 
-    // Raspberry Pi 정보 출력
-    if (infoElement) {
-        infoElement.innerHTML = `
-            <p><strong>Raspberry Pi ID:</strong> ${data.piId || '정보 없음'}</p>
-            <p><strong>신호 강도:</strong> ${data.signalStrength ? data.signalStrength.toFixed(2) : '정보 없음'}</p>
-            <p><strong>연결 시간:</strong> ${data.pingTime || '정보 없음'}</p>
-        `;
-    }
-}
+    piInfoContainer.innerHTML = piInfoText;
+    document.body.appendChild(piInfoContainer);  // 페이지에 추가
+};
+
+// WebSocket 연결이 종료되었을 때
+socket.onclose = () => {
+    console.log('서버와의 연결이 종료됨');
+    document.getElementById('status').textContent = '서버와 연결 종료됨.';
+    document.getElementById('status').classList.remove('waiting', 'connected');
+    document.getElementById('status').classList.add('disconnected');
+};
+
+// 연결 요청 버튼 클릭 시 처리
+document.getElementById('connectButton').addEventListener('click', () => {
+    // 서버로 연결 요청 메시지 전송 (SDP 정보는 실제 WebRTC 연결을 위해 사용)
+    const connectMessage = {
+        type: 'connect',  // 'connect' 타입의 메시지
+        sdp: '웹 페이지에서 보낸 SDP 정보'  // WebRTC의 실제 SDP 정보 사용 필요
+    };
+    socket.send(JSON.stringify(connectMessage));
+    console.log('서버로 연결 요청 메시지 전송');
+});
