@@ -1,8 +1,8 @@
-// app.js
-const socket = new WebSocket('https://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/'); // 서버 URL
+const socket = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/'); // 서버 URL
 
 socket.onopen = () => {
     console.log('서버에 연결됨');
+    document.getElementById('connectionStatus').textContent = '서버에 연결됨'; // 상태 텍스트 표시
 };
 
 socket.onmessage = (event) => {
@@ -11,12 +11,13 @@ socket.onmessage = (event) => {
     // Raspberry Pi 연결 성공
     if (data.type === 'connected') {
         console.log('연결 성공:', data.message);
-        // WebRTC 연결 설정 등의 로직을 진행할 수 있음
+        document.getElementById('connectionStatus').textContent = 'Raspberry Pi 연결 성공';
     }
 
     // 오류 메시지
     if (data.type === 'error') {
         console.log('오류:', data.message);
+        document.getElementById('connectionStatus').textContent = '연결 오류: ' + data.message;
     }
 };
 
@@ -28,4 +29,5 @@ document.getElementById('connectButton').addEventListener('click', () => {
     };
 
     socket.send(JSON.stringify(message));
+    document.getElementById('connectionStatus').textContent = '연결 요청 중...'; // 요청 중 상태 표시
 });
