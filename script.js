@@ -4,7 +4,7 @@ function fetchTime() {
     document.getElementById('status').classList.remove('status-success', 'status-error');
     
     // polling 방식으로 Flask 서버에서 시간 데이터를 요청
-    fetch('http://<your_server_ip>:5000/poll')  // <your_server_ip>을 실제 서버 IP로 변경
+    fetch('http://<your_server_ip>:8081/poll')  // <your_server_ip>을 실제 서버 IP로 변경
         .then(response => response.json())
         .then(data => {
             // 서버 응답을 성공적으로 받았을 경우
@@ -21,4 +21,4 @@ function fetchTime() {
 }
 
 // 5초마다 서버에서 데이터를 요청하는 polling 시작
-setInterval(fetchTime, 5000);
+setInterval(fetchTime, 8081);
