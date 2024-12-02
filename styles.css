@@ -1,35 +1,64 @@
-/* 스타일 추가 */
+/* 기본적인 레이아웃 설정 */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f0f0;
-    margin: 0;
-    padding: 0;
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f7fc;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    margin: 0;
+    color: #333;
 }
 
+/* 콘텐츠를 감싸는 컨테이너 */
 .container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     text-align: center;
-    padding: 20px;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 350px;
 }
 
-button {
-    padding: 10px 20px;
+h1 {
+    color: #4CAF50;
+    font-size: 24px;
+}
+
+/* 상태 표시 */
+#status {
+    margin-top: 20px;
     font-size: 16px;
-    background-color: #007BFF;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin: 10px;
+    font-weight: bold;
+    color: #666;
 }
 
-button:hover {
-    background-color: #0056b3;
+/* 버튼 스타일 */
+#connectButton {
+    margin-top: 30px;
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#connectButton:hover {
+    background-color: #45a049;
+}
+
+/* 상태 메시지 강조 */
+.connected {
+    color: green;
+}
+
+.disconnected {
+    color: red;
+}
+
+.waiting {
+    color: #f39c12;
 }
