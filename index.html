@@ -1,14 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Central Server</title>
+    <title>Raspberry Pi 연결 관리</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Raspberry Pi 상태</h1>
-    <div id="raspberryPiList"></div>  <!-- Raspberry Pi 데이터를 출력할 부분 -->
+    <div class="container">
+        <header>
+            <h1>Raspberry Pi 연결 관리</h1>
+        </header>
+
+        <div class="controls">
+            <button id="connectButton" onclick="connectToServer()">웹 페이지 연결</button>
+        </div>
+
+        <div class="raspberryPiStatus">
+            <h2>연결된 Raspberry Pi</h2>
+            <div id="raspberryPiList">
+                <!-- Raspberry Pi 데이터가 여기에 표시됩니다 -->
+            </div>
+        </div>
+
+        <footer>
+            <p>© 2024 Raspberry Pi 연결 관리 시스템</p>
+        </footer>
+    </div>
 
     <script src="script.js"></script>
 </body>
