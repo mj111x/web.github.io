@@ -36,24 +36,10 @@ socket.onmessage = (event) => {
         console.log('가장 가까운 Raspberry Pi로 연결 요청');
         // 실제로는 WebRTC 연결을 위한 처리 로직을 여기에 작성
         document.getElementById('status').textContent = 'Raspberry Pi와 연결 요청!';
+
+    // 서버가 가장 가까운 Raspberry Pi 정보를 보낸 경우
+    } else if (data.type === 'closestPi') {
+        console.log('가장 가까운 Raspberry Pi 정보:', data);
+        // 서버로부터
     }
-};
-
-// WebSocket 연결이 종료되었을 때
-socket.onclose = () => {
-    console.log('서버와의 연결이 종료됨');
-    document.getElementById('status').textContent = '서버와 연결 종료됨.';
-    document.getElementById('status').classList.remove('waiting', 'connected');
-    document.getElementById('status').classList.add('disconnected');
-};
-
-// 연결 요청 버튼 클릭 시 처리
-document.getElementById('connectButton').addEventListener('click', () => {
-    // 서버로 연결 요청 메시지 전송 (SDP 정보는 실제 WebRTC 연결을 위해 사용)
-    const connectMessage = {
-        type: 'connect',  // 'connect' 타입의 메시지
-        sdp: '웹 페이지에서 보낸 SDP 정보'  // WebRTC의 실제 SDP 정보 사용 필요
-    };
-    socket.send(JSON.stringify(connectMessage));
-    console.log('서버로 연결 요청 메시지 전송');
-});
+}
