@@ -26,23 +26,31 @@ socket.onmessage = (event) => {
 // Raspberry Pi 정보 화면에 출력하는 함수
 function displayRaspberryPiInfo(data) {
     const infoElement = document.getElementById('raspberryPiInfo');
+    const piId = data.piId || "정보 없음";
+    const signalStrength = data.signalStrength ? data.signalStrength.toFixed(2) : "정보 없음";
 
-    // Raspberry Pi 정보 출력
-    if (infoElement) {
-
-        const piId = data.piId || "정보 없음";
-        const signalStrength = data.signalStrength ? data.signalStrength.toFixed(2) : "정보 없음";
-        const pingTime = data.pingTime ? new Date(data.pingTime).toLocaleString() : "정보 없음";
-        const signalperiod = data.signalperiod || "데이터 없음";
-        
-        infoElement.innerHTML = `
-            <p><strong>Raspberry Pi ID:</strong> ${piId}</p>
-            <p><strong>신호 강도:</strong> ${signalStrength}</p>
-            <p><strong>연결 시간:</strong> ${pingTime}</p>
-            <p><strong>수집된 데이터:</strong> ${signalperiod}</p>
-        `;
+    // 연결 시간 처리
+    let pingTime = "정보 없음";
+    if (data.pingTime) {
+        try {
+            const connectionTime = new Date(data.pingTime);
+            pingTime = connectionTime.toLocaleString(); // 로컬 시간 형식으로 변환
+        } catch (error) {
+            console.error("pingTime 변환 오류:", error);
+        }
     }
-}
+
+    const signalPeriod = data.signalPeriod || "데이터 없음";
+
+    // HTML 업데이트
+    infoElement.innerHTML = `
+        <p><strong>Raspberry Pi ID:</strong> ${piId}</p>
+        <p><strong>신호 강도:</strong> ${signalStrength}</p>
+        <p><strong>연결 시간:</strong> ${pingTime}</p>
+        <p><strong>수집된 데이터:</strong> ${signalPeriod}</p>
+    `;
+    }
+
 socket.onerror = (error) => {
     console.log('WebSocket 에러:', error);
 };
