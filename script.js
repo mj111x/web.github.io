@@ -33,15 +33,13 @@ function displayRaspberryPiInfo(data) {
         const piId = data.piId || "정보 없음";
         const signalStrength = data.signalStrength ? data.signalStrength.toFixed(2) : "정보 없음";
         const pingTime = data.pingTime ? new Date(data.pingTime).toLocaleString() : "정보 없음";
-        const collectedData = data.collectedData || "데이터 없음";
-
-        const connectionTime = new Date(data.pingTime);  // 서버에서 받은 pingTime을 Date 객체로 변환
-        const formattedTime = connectionTime.toLocaleString();  // 로컬 시간 형식으로 변환
+        const signalperiod = data.signalperiod || "데이터 없음";
+        
         infoElement.innerHTML = `
             <p><strong>Raspberry Pi ID:</strong> ${piId}</p>
             <p><strong>신호 강도:</strong> ${signalStrength}</p>
             <p><strong>연결 시간:</strong> ${pingTime}</p>
-            <p><strong>수집된 데이터:</strong> ${collectedData}</p>
+            <p><strong>수집된 데이터:</strong> ${signalperiod}</p>
         `;
     }
 }
