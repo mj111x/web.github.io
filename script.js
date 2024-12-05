@@ -37,16 +37,11 @@ function displayRaspberryPiInfo(data) {
     // 데이터 추출 및 기본값 설정
     const piId = data.id || "정보 없음";
     const signalStrength = data.signalStrength ? data.signalStrength.toFixed(2) : "정보 없음";
-    const signalPeriod = data.signalperiod || "데이터 없음"; // 서버에서 전송된 텍스트 파일 내용
-    const pingTime = data.pingTime
-        ? new Date(data.pingTime).toLocaleString()
-        : "정보 없음";
+    const signalPeriod = data.signalperiod || "데이터 없음";
 
-    // Raspberry Pi 정보 출력
     infoElement.innerHTML = `
         <p><strong>Raspberry Pi ID:</strong> ${piId}</p>
         <p><strong>신호 강도:</strong> ${signalStrength}</p>
-        <p><strong>연결 시간:</strong> ${pingTime}</p>
         <p><strong>수집된 데이터:</strong> ${signalPeriod}</p>
     `;
     }
