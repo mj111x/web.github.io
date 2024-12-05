@@ -36,6 +36,7 @@ function displayRaspberryPiInfo(data) {
             <p><strong>Raspberry Pi ID:</strong> ${data.piId || '정보 없음'}</p>
             <p><strong>신호 강도:</strong> ${data.signalStrength ? data.signalStrength.toFixed(2) : '정보 없음'}</p>
             <p><strong>연결 시간:</strong> ${data.pingTime || '정보 없음'}</p>
+            <p><strong>수집된 데이터:</strong> ${data.collectedData || '데이터 없음'}</p>
         `;
     }
 }
