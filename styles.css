@@ -25,6 +25,19 @@ h1 {
     font-size: 24px;
 }
 
+/* Raspberry Pi 정보 표시 영역 */
+#raspberryPiInfo {
+    margin-top: 20px;
+    font-size: 16px;
+    color: #444;
+    text-align: left;
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 5px;
+    display: block;
+    margin-top: 20px;
+}
+
 /* 상태 표시 */
 #status {
     margin-top: 20px;

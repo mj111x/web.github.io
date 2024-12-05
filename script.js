@@ -32,13 +32,16 @@ function displayRaspberryPiInfo(data) {
 
         const connectionTime = new Date(data.pingTime);  // 서버에서 받은 pingTime을 Date 객체로 변환
         const formattedTime = connectionTime.toLocaleString();  // 로컬 시간 형식으로 변환
+
         infoElement.innerHTML = `
             <p><strong>Raspberry Pi ID:</strong> ${data.piId || '정보 없음'}</p>
             <p><strong>신호 강도:</strong> ${data.signalStrength ? data.signalStrength.toFixed(2) : '정보 없음'}</p>
-            <p><strong>연결 시간:</strong> ${data.pingTime || '정보 없음'}</p>
+            <p><strong>연결 시간:</strong> ${formattedTime || '정보 없음'}</p>
+            <p><strong>파일 데이터:</strong> ${data.inputData || '파일 정보 없음'}</p>
         `;
     }
 }
+
 socket.onerror = (error) => {
     console.log('WebSocket 에러:', error);
 };
