@@ -25,24 +25,24 @@ socket.onmessage = (event) => {
 
 // Raspberry Pi 정보 화면에 출력하는 함수
 function displayRaspberryPiInfo(data) {
+    
     const infoElement = document.getElementById('raspberryPiInfo');
-    const piId = data.piId || "정보 없음";
-    const signalStrength = data.signalStrength ? data.signalStrength.toFixed(2) : "정보 없음";
-
-    // 연결 시간 처리
-    let pingTime = "정보 없음";
-    if (data.pingTime) {
-        try {
-            const connectionTime = new Date(data.pingTime);
-            pingTime = connectionTime.toLocaleString(); // 로컬 시간 형식으로 변환
-        } catch (error) {
-            console.error("pingTime 변환 오류:", error);
-        }
+    
+    // HTML 요소가 존재하지 않는 경우 오류 출력
+    if (!infoElement) {
+        console.error('HTML 요소를 찾을 수 없습니다: #raspberryPiInfo');
+        return;
     }
 
-    const signalPeriod = data.signalPeriod || "데이터 없음";
+    // 데이터 추출 및 기본값 설정
+    const piId = data.id || "정보 없음";
+    const signalStrength = data.signalStrength ? data.signalStrength.toFixed(2) : "정보 없음";
+    const signalPeriod = data.signalperiod || "데이터 없음"; // 서버에서 전송된 텍스트 파일 내용
+    const pingTime = data.pingTime
+        ? new Date(data.pingTime).toLocaleString()
+        : "정보 없음";
 
-    // HTML 업데이트
+    // Raspberry Pi 정보 출력
     infoElement.innerHTML = `
         <p><strong>Raspberry Pi ID:</strong> ${piId}</p>
         <p><strong>신호 강도:</strong> ${signalStrength}</p>
