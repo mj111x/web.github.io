@@ -1,18 +1,19 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raspberry Pi 정보</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Raspberry Pi 데이터</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>WebSocket 연결 테스트</h1>
-        <div id="raspberryPiInfo">
-            <!-- Raspberry Pi 정보가 여기에 표시됩니다 -->
-        </div>
+        <h1>WebSocket 상태</h1>
+        <div id="status" class="waiting">서버 연결을 기다리는 중...</div>
+        <button id="connectButton">연결 시도</button>
+        <div id="raspberryPiData"></div>
+        <div id="raspberryPiInfo"></div>
     </div>
-    <script src="script.js"></script>
+    <script src="websocket.js"></script>
 </body>
 </html>
