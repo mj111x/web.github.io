@@ -178,7 +178,7 @@ function handleDeviceMotion(event) {
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
-        // 이동 거리 계산 (걸음마다 보폭 재계산)
+        // 이동 거리 계산 (보폭 반영)
         const stride = Math.abs(filteredAccY * deltaTime);  // 보폭 계산
         distance += stride;
 
@@ -194,15 +194,16 @@ function handleDeviceMotion(event) {
 
     lastTime = currentTime;  // 마지막 업데이트 시간 갱신
 
-    // 실시간 결과 출력
+    // **결과 출력**은 걸음 검출 후 실행
     outputStrideData(currentTime);
 }
 
-// 결과 출력 함수
+// 결과 출력 함수 (실시간 속도 계산)
 function outputStrideData(currentTime) {
     totalTime = (currentTime - lastTime) / 1000;  // 총 이동 시간 계산 (초)
 
-    const currentSpeed = totalTime > 0 ? (distance / totalTime).toFixed(2) : 0;  // 평균 속도 계산 (m/s)
+    // 속도 계산 (m/s)
+    const currentSpeed = totalTime > 0 ? (distance / totalTime).toFixed(2) : 0;
     const speedKmH = (currentSpeed * 3.6).toFixed(2);  // 속도를 km/h로 변환
 
     const speedInfoElement = document.getElementById("speedInfo");
