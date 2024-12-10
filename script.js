@@ -115,7 +115,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
             })
             .catch((error) => console.error("권한 요청 실패:", error));
     } else {
-        console.error("DeviceMotion 권한 요청 필요 없음.");
+        console.error("DeviceMotion API 권한 필요 없음.");
         resetTest();  // 초기화 후 리스너 시작
         initDeviceMotionListener(); // iOS 이외의 브라우저
     }
@@ -123,7 +123,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
 
 // 초기화 함수
 function resetTest() {
-    lastTime = new Date().getTime();  // 테스트 시작 시간 초기화
+    testStartTime = new Date().getTime();  // 테스트 시작 시간 초기화
     distance = 0;
     stepCount = 0;
     avgStrideLength = 0;
@@ -141,7 +141,7 @@ function initDeviceMotionListener() {
 }
 
 // 계산 변수 초기화
-let lastTime = new Date().getTime();
+let testStartTime = new Date().getTime();
 let distance = 0, stepCount = 0, avgStrideLength = 0;
 let filteredAccY = 0;
 
@@ -159,7 +159,6 @@ let totalTime = 0;
 // DeviceMotion 이벤트 핸들러
 function handleDeviceMotion(event) {
     const currentTime = new Date().getTime();
-    const deltaTime = (currentTime - lastTime) / 1000;  // 초 단위 시간 차이
 
     // Y축 가속도 값 (중력 제거)
     const accY = event.acceleration?.y || 0;
@@ -178,8 +177,8 @@ function handleDeviceMotion(event) {
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
-        // 이동 거리 계산 (보폭 반영)
-        const stride = Math.abs(filteredAccY * deltaTime);  // 보폭 계산
+        // 이동 거리 계산 (걸음마다 보폭 계산)
+        const stride = Math.abs(filteredAccY * 0.5);  // 보폭 계산
         distance += stride;
 
         // 걸음 수 증가
@@ -192,27 +191,28 @@ function handleDeviceMotion(event) {
         }
     }
 
-    lastTime = currentTime;  // 마지막 업데이트 시간 갱신
+    // 총 이동 시간 업데이트
+    totalTime = (currentTime - testStartTime) / 1000;  // 초 단위 이동 시간 계산
 
-    // **결과 출력**은 걸음 검출 후 실행
+    // 실시간 결과 출력
     outputStrideData(currentTime);
 }
 
-// 결과 출력 함수 (실시간 속도 계산)
+// 결과 출력 함수 (속도 계산 및 결과 표시)
 function outputStrideData(currentTime) {
-    totalTime = (currentTime - lastTime) / 1000;  // 총 이동 시간 계산 (초)
-
     // 속도 계산 (m/s)
     const currentSpeed = totalTime > 0 ? (distance / totalTime).toFixed(2) : 0;
     const speedKmH = (currentSpeed * 3.6).toFixed(2);  // 속도를 km/h로 변환
 
+    // 결과 화면 표시
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
         speedInfoElement.innerHTML = `
             <strong>현재 속도:</strong> ${currentSpeed} m/s (${speedKmH} km/h)
             <br><strong>이동 거리:</strong> ${distance.toFixed(2)} m
             <br><strong>걸음 수:</strong> ${stepCount}
-            <br><strong>유동적 평균 보폭 길이:</strong> ${avgStrideLength.toFixed(2)} m
+            <br><strong>평균 보폭 길이:</strong> ${avgStrideLength.toFixed(2)} m
+            <br><strong>이동 시간:</strong> ${totalTime.toFixed(2)} 초
         `;
     }
 }
