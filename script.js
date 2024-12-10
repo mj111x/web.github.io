@@ -100,6 +100,30 @@ socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
 
+
+
+// 권한 요청 버튼 클릭
+document.getElementById("requestPermissionButton").addEventListener("click", () => {
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission()
+            .then((response) => {
+                if (response === 'granted') {
+                    console.log("가속도계 권한 허용됨!");
+                    resetTest();  // 초기화 후 리스너 시작
+                    initDeviceMotionListener();
+                } else {
+                    console.error("가속도계 권한 거부됨!");
+                    alert("가속도계 권한이 필요합니다.");
+                }
+            })
+            .catch((error) => console.error("권한 요청 실패:", error));
+    } else {
+        console.error("DeviceMotion 권한 요청 필요 없음.");
+        resetTest();  // 초기화 후 리스너 시작
+        initDeviceMotionListener(); // iOS 이외의 브라우저
+    }
+});
+
 // 권한 요청 버튼 클릭
 document.getElementById("requestPermissionButton").addEventListener("click", () => {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -153,7 +177,7 @@ const STEP_THRESHOLD = 1.2;    // 걸음 검출 기준
 
 // 걸음 검출 주기
 let lastStepTime = 0;
-const STEP_DETECTION_INTERVAL = 1000;  // 1초 주기
+const STEP_DETECTION_INTERVAL = 500;  // 0.5초 주기
 
 // DeviceMotion 이벤트 핸들러
 function handleDeviceMotion(event) {
@@ -164,7 +188,7 @@ function handleDeviceMotion(event) {
     const accY = event.acceleration?.y || 0;
 
     // 저역 필터 적용 (노이즈 제거)
-    const alpha = 0.8;  // 필터 강도
+    const alpha = 0.6;  // 필터 강도
     filteredAccY = alpha * filteredAccY + (1 - alpha) * accY;
 
     // 노이즈 제거
@@ -177,8 +201,8 @@ function handleDeviceMotion(event) {
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
-        // **보폭 계산 수정**
-        const stride = Math.max(Math.abs(filteredAccY * deltaTime * 9.8), 0.5);  // 가속도 적용 보폭 계산
+        // **보폭 계산 수정 (최소 보폭 0.7m)**
+        const stride = Math.max(Math.abs(filteredAccY * deltaTime * 9.8), 0.7); 
         distance += stride;
 
         // **걸음 수 증가**
