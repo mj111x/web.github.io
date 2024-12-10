@@ -52,29 +52,29 @@ socket.onclose = () => {
 };
 */
 // WebSocket 연결 및 메시지 처리
+// WebSocket 연결 설정
 const socket = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/:8080');
 
 socket.onopen = () => {
     console.log("서버에 연결되었습니다.");
     const pingData = {
         type: 'ping',
-        id: '웹페이지-001',  // 웹 페이지의 고유 ID 설정
-        signalStrength: Math.random() * 100  // 임의의 신호 강도 값 설정
+        id: '웹페이지-001',  
+        signalStrength: Math.random() * 100  // 임의의 신호 강도 값
     };
     socket.send(JSON.stringify(pingData));
 };
 
 socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);  // 받은 메시지를 JSON 객체로 변환
+    const data = JSON.parse(event.data);
     console.log('서버로부터 받은 메시지:', data);
 
     if (data.type === 'offer') {
-        // 서버로부터 받은 Raspberry Pi 정보 표시
         displayRaspberryPiInfo(data);
     }
 };
 
-// Raspberry Pi 정보 화면에 출력하는 함수
+// Raspberry Pi 정보 화면 출력
 function displayRaspberryPiInfo(data) {
     const infoElement = document.getElementById('raspberryPiInfo');
 
@@ -87,7 +87,6 @@ function displayRaspberryPiInfo(data) {
             <p><strong>신호 강도:</strong> ${data.signalStrength ? data.signalStrength.toFixed(2) : '정보 없음'}</p>
             <p><strong>연결 시간:</strong> ${formattedTime || '정보 없음'}</p>
             <p><strong>파일 데이터:</strong> ${data.inputData || '파일 정보 없음'}</p>
-            <p id="speedInfo"><strong>보폭 속도:</strong> 계산 중...</p>
         `;
     }
 }
@@ -100,27 +99,40 @@ socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
 
-// 보폭 속도 계산 (DeviceMotion API 사용)
-let speedY = 0; 
-let distance = 0; 
-let lastTime = new Date().getTime(); 
+// 보폭 속도 계산 설정
+let lastTime = new Date().getTime();
+let speedY = 0, distance = 0, stepCount = 0;
 
 window.addEventListener("devicemotion", (event) => {
     const currentTime = new Date().getTime();
-    const deltaTime = (currentTime - lastTime) / 1000;  // 초 단위 시간 변화
-    const accY = event.accelerationIncludingGravity.y || 0;  // Y축 가속도 가져오기
+    const deltaTime = (currentTime - lastTime) / 1000;  // 초 단위 시간
 
-    // 속도 계산 및 거리 업데이트
+    // Y축 가속도 (상하 이동)
+    const accY = event.accelerationIncludingGravity.y || 0;
+
+    // 속도 계산
     speedY += accY * deltaTime;
+
+    // 이동 거리 계산
     const deltaDistance = speedY * deltaTime;
     distance += Math.abs(deltaDistance);
 
-    // 보폭 속도 정보 업데이트
+    // 걸음 인식: 특정 속도 임계값 초과 시 걸음으로 인식
+    if (Math.abs(accY) > 1.5) {
+        stepCount++;
+    }
+
+    // 보폭 계산
+    const strideLength = stepCount > 0 ? (distance / stepCount).toFixed(2) : 0;
+
+    // 보폭 정보 업데이트
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
         speedInfoElement.innerHTML = `
             <strong>보폭 속도:</strong> ${speedY.toFixed(2)} m/s
             <br><strong>이동 거리:</strong> ${distance.toFixed(2)} m
+            <br><strong>걸음 수:</strong> ${stepCount}
+            <br><strong>평균 보폭 길이:</strong> ${strideLength} m
         `;
     }
 

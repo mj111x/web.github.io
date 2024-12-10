@@ -75,3 +75,15 @@ h1 {
 .waiting {
     color: #f39c12;
 }
+
+/* 보폭 속도 출력 스타일 */
+#speedInfo {
+    font-size: 18px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-top: 20px;
+    background: #e8f5e9;
+    padding: 15px;
+    border-radius: 5px;
+    text-align: left;
+}
