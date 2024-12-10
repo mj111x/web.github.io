@@ -99,7 +99,7 @@ socket.onerror = (error) => {
 socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
-// 권한 요청 버튼 클릭
+/// 권한 요청 버튼 클릭
 document.getElementById("requestPermissionButton").addEventListener("click", () => {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission()
@@ -115,7 +115,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
             })
             .catch((error) => console.error("권한 요청 실패:", error));
     } else {
-        console.error("DeviceMotion API 권한 필요 없음.");
+        console.error("DeviceMotion 권한 요청 필요 없음.");
         resetTest();  // 초기화 후 리스너 시작
         initDeviceMotionListener(); // iOS 이외의 브라우저
     }
@@ -189,13 +189,13 @@ function handleDeviceMotion(event) {
         if (stepCount > 0) {
             avgStrideLength = distance / stepCount;  // 유동적 보폭 계산
         }
+
+        // 총 이동 시간 업데이트
+        totalTime = (currentTime - testStartTime) / 1000;  // 초 단위 이동 시간 계산
+
+        // 실시간 결과 출력
+        outputStrideData(currentTime);
     }
-
-    // 총 이동 시간 업데이트
-    totalTime = (currentTime - testStartTime) / 1000;  // 초 단위 이동 시간 계산
-
-    // 실시간 결과 출력
-    outputStrideData(currentTime);
 }
 
 // 결과 출력 함수 (속도 계산 및 결과 표시)
@@ -211,7 +211,7 @@ function outputStrideData(currentTime) {
             <strong>현재 속도:</strong> ${currentSpeed} m/s (${speedKmH} km/h)
             <br><strong>이동 거리:</strong> ${distance.toFixed(2)} m
             <br><strong>걸음 수:</strong> ${stepCount}
-            <br><strong>평균 보폭 길이:</strong> ${avgStrideLength.toFixed(2)} m
+            <br><strong>유동적 평균 보폭 길이:</strong> ${avgStrideLength.toFixed(2)} m
             <br><strong>이동 시간:</strong> ${totalTime.toFixed(2)} 초
         `;
     }
