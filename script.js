@@ -99,26 +99,7 @@ socket.onerror = (error) => {
 socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
-// 권한 요청 버튼 클릭 이벤트
-document.getElementById("requestPermissionButton").addEventListener("click", () => {
-    if (typeof DeviceMotionEvent.requestPermission === 'function') {
-        DeviceMotionEvent.requestPermission()
-            .then((response) => {
-                if (response === 'granted') {
-                    console.log("가속도계 권한 허용됨!");
-                    initDeviceMotionListener();
-                } else {
-                    console.error("가속도계 권한 거부됨!");
-                    alert("가속도계 권한이 필요합니다.");
-                }
-            })
-            .catch((error) => console.error("권한 요청 실패:", error));
-    } else {
-        console.error("DeviceMotion 권한 요청 필요 없음.");
-        initDeviceMotionListener(); // iOS 이외의 브라우저
-    }
-});
-// 권한 요청 버튼 클릭 이벤트
+// 권한 요청 버튼 클릭
 document.getElementById("requestPermissionButton").addEventListener("click", () => {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission()
@@ -138,7 +119,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
     }
 });
 
-// DeviceMotion 리스너 등록 함수
+// DeviceMotion 리스너 등록
 function initDeviceMotionListener() {
     if (window.DeviceMotionEvent) {
         console.log("DeviceMotion API 지원됨.");
@@ -150,19 +131,23 @@ function initDeviceMotionListener() {
 
 // 보폭 계산 변수
 let lastTime = new Date().getTime();
-let speedY = 0, distance = 0, stepCount = 0;
-let lastAccY = 0;
+let speedY = 0, distance = 0, stepCount = 0, lastAccY = 0;
 
-// 가속도 임계값 필터
-const NOISE_THRESHOLD = 0.5;  // 노이즈 필터
-const STEP_MIN_THRESHOLD = -1.5;   // 걸음 검출 최소 기준
-const STEP_MAX_THRESHOLD = 1.5;    // 걸음 검출 최대 기준
+// 가속도 검출 임계값
+const NOISE_THRESHOLD = 0.5;   // 노이즈 제거 기준
+const STEP_THRESHOLD = 1.5;    // 걸음 검출 기준
 
-// 1분 타이머 시작
+// 저역 필터 변수
+let filteredAccY = 0;
+
+// 걸음 검출 주기 (0.5초마다 걸음 검출)
+let lastStepTime = 0;
+const STEP_DETECTION_INTERVAL = 500;  // 0.5초
+
+// 측정 주기 설정 (1초마다 속도 출력)
 setInterval(() => {
-    outputStrideData();  // 1분마다 보폭 데이터 출력
-    resetStrideData();   // 데이터 초기화
-}, 60000);  // 1분(60초)마다 실행
+    outputStrideData();
+}, 1000);  // 1초마다 업데이트
 
 // DeviceMotion 이벤트 핸들러
 function handleDeviceMotion(event) {
@@ -172,25 +157,31 @@ function handleDeviceMotion(event) {
     // Y축 가속도 값 (중력 제거)
     const accY = event.acceleration?.y || 0;
 
-    // 노이즈 필터 적용
-    if (Math.abs(accY) < NOISE_THRESHOLD) {
+    // 저역 필터 적용 (노이즈 제거)
+    const alpha = 0.8;  // 필터 강도
+    filteredAccY = alpha * filteredAccY + (1 - alpha) * accY;
+
+    // 노이즈 제거
+    if (Math.abs(filteredAccY) < NOISE_THRESHOLD) {
         return;  // 노이즈로 간주하고 무시
     }
 
-    // 걸음 검출 조건 (Y축 가속도 변화)
-    if (lastAccY < STEP_MIN_THRESHOLD && accY > STEP_MAX_THRESHOLD) {
-        stepCount++;
-    }
-
     // 속도 계산 (초당)
-    speedY += accY * deltaTime;
+    speedY += filteredAccY * deltaTime;
 
     // 이동 거리 계산
     const deltaDistance = speedY * deltaTime;
     distance += Math.abs(deltaDistance);
 
-    // 마지막 가속도 값 저장
-    lastAccY = accY;
+    // 걸음 검출 (0.5초 주기 제한)
+    if (
+        Math.abs(filteredAccY) > STEP_THRESHOLD &&
+        currentTime - lastStepTime > STEP_DETECTION_INTERVAL
+    ) {
+        stepCount++;
+        lastStepTime = currentTime;  // 마지막 걸음 검출 시간 업데이트
+    }
+
     lastTime = currentTime;  // 마지막 업데이트 시간 갱신
 }
 
@@ -201,19 +192,10 @@ function outputStrideData() {
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
         speedInfoElement.innerHTML = `
-            <strong>보폭 속도:</strong> ${speedY.toFixed(2)} m/s
+            <strong>걸음 속도:</strong> ${(distance / 1).toFixed(2)} m/s
             <br><strong>이동 거리:</strong> ${distance.toFixed(2)} m
             <br><strong>걸음 수:</strong> ${stepCount}
             <br><strong>평균 보폭 길이:</strong> ${strideLength} m
         `;
     }
-}
-
-// 데이터 초기화 함수
-function resetStrideData() {
-    speedY = 0;
-    distance = 0;
-    stepCount = 0;
-    lastAccY = 0;
-    lastTime = new Date().getTime();
 }
