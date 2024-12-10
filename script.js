@@ -99,18 +99,41 @@ socket.onerror = (error) => {
 socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
+// iOS Safari 권한 요청
+if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    document.body.addEventListener('click', () => {
+        DeviceMotionEvent.requestPermission()
+            .then((response) => {
+                if (response === 'granted') {
+                    console.log("가속도계 권한 허용됨!");
+                    initDeviceMotionListener();  // 보폭 계산 리스너 등록
+                } else {
+                    console.error("가속도계 권한이 거부되었습니다.");
+                }
+            })
+            .catch(console.error);
+    });
+} else {
+    initDeviceMotionListener();  // 권한 요청이 필요 없는 경우
+}
 
-// 보폭 속도 계산 및 업데이트 주기 측정 설정
+// DeviceMotion 이벤트 리스너 등록 함수
+function initDeviceMotionListener() {
+    if (window.DeviceMotionEvent) {
+        console.log("DeviceMotion API 지원됨.");
+        window.addEventListener("devicemotion", handleDeviceMotion);
+    } else {
+        console.error("DeviceMotion API를 지원하지 않는 브라우저입니다.");
+    }
+}
+
+// 보폭 계산 로직
 let lastTime = new Date().getTime();
 let speedY = 0, distance = 0, stepCount = 0;
 
-window.addEventListener("devicemotion", (event) => {
+function handleDeviceMotion(event) {
     const currentTime = new Date().getTime();
-    const deltaTime = (currentTime - lastTime) / 1000;  // 초 단위 시간
-
-    // 주기 계산 및 출력
-    const updateInterval = event.interval || deltaTime * 1000; // ms 단위
-    console.log(`보폭 업데이트 주기: ${updateInterval.toFixed(2)} ms`);
+    const deltaTime = (currentTime - lastTime) / 1000;  // 초 단위
 
     // Y축 가속도 (상하 이동)
     const accY = event.accelerationIncludingGravity.y || 0;
@@ -138,14 +161,8 @@ window.addEventListener("devicemotion", (event) => {
             <br><strong>이동 거리:</strong> ${distance.toFixed(2)} m
             <br><strong>걸음 수:</strong> ${stepCount}
             <br><strong>평균 보폭 길이:</strong> ${strideLength} m
-            <br><strong>업데이트 주기:</strong> ${updateInterval.toFixed(2)} ms
         `;
     }
 
     lastTime = currentTime;  // 마지막 시간 업데이트
-});
-
-// 5초마다 새로고침
-setTimeout(() => {
-    location.reload();
-}, 5000);
+}
