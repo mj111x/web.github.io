@@ -118,6 +118,25 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
         initDeviceMotionListener(); // iOS 이외의 브라우저
     }
 });
+// 권한 요청 버튼 클릭 이벤트
+document.getElementById("requestPermissionButton").addEventListener("click", () => {
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission()
+            .then((response) => {
+                if (response === 'granted') {
+                    console.log("가속도계 권한 허용됨!");
+                    initDeviceMotionListener();
+                } else {
+                    console.error("가속도계 권한 거부됨!");
+                    alert("가속도계 권한이 필요합니다.");
+                }
+            })
+            .catch((error) => console.error("권한 요청 실패:", error));
+    } else {
+        console.error("DeviceMotion 권한 요청 필요 없음.");
+        initDeviceMotionListener(); // iOS 이외의 브라우저
+    }
+});
 
 // DeviceMotion 리스너 등록 함수
 function initDeviceMotionListener() {
@@ -132,10 +151,18 @@ function initDeviceMotionListener() {
 // 보폭 계산 변수
 let lastTime = new Date().getTime();
 let speedY = 0, distance = 0, stepCount = 0;
+let lastAccY = 0;
 
 // 가속도 임계값 필터
 const NOISE_THRESHOLD = 0.5;  // 노이즈 필터
-const STEP_THRESHOLD = 1.5;   // 걸음 검출 기준 가속도 값
+const STEP_MIN_THRESHOLD = -1.5;   // 걸음 검출 최소 기준
+const STEP_MAX_THRESHOLD = 1.5;    // 걸음 검출 최대 기준
+
+// 1분 타이머 시작
+setInterval(() => {
+    outputStrideData();  // 1분마다 보폭 데이터 출력
+    resetStrideData();   // 데이터 초기화
+}, 60000);  // 1분(60초)마다 실행
 
 // DeviceMotion 이벤트 핸들러
 function handleDeviceMotion(event) {
@@ -150,6 +177,11 @@ function handleDeviceMotion(event) {
         return;  // 노이즈로 간주하고 무시
     }
 
+    // 걸음 검출 조건 (Y축 가속도 변화)
+    if (lastAccY < STEP_MIN_THRESHOLD && accY > STEP_MAX_THRESHOLD) {
+        stepCount++;
+    }
+
     // 속도 계산 (초당)
     speedY += accY * deltaTime;
 
@@ -157,15 +189,15 @@ function handleDeviceMotion(event) {
     const deltaDistance = speedY * deltaTime;
     distance += Math.abs(deltaDistance);
 
-    // 걸음 검출 (Y축 가속도 값이 일정 기준 초과 시)
-    if (Math.abs(accY) > STEP_THRESHOLD) {
-        stepCount++;
-    }
+    // 마지막 가속도 값 저장
+    lastAccY = accY;
+    lastTime = currentTime;  // 마지막 업데이트 시간 갱신
+}
 
-    // 보폭 계산 (걸음 수가 0 이상일 경우)
+// 보폭 정보 출력
+function outputStrideData() {
     const strideLength = stepCount > 0 ? (distance / stepCount).toFixed(2) : 0;
 
-    // 보폭 정보 업데이트
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
         speedInfoElement.innerHTML = `
@@ -175,6 +207,13 @@ function handleDeviceMotion(event) {
             <br><strong>평균 보폭 길이:</strong> ${strideLength} m
         `;
     }
+}
 
-    lastTime = currentTime;  // 마지막 업데이트 시간 갱신
+// 데이터 초기화 함수
+function resetStrideData() {
+    speedY = 0;
+    distance = 0;
+    stepCount = 0;
+    lastAccY = 0;
+    lastTime = new Date().getTime();
 }
