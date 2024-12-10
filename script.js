@@ -99,7 +99,8 @@ socket.onerror = (error) => {
 socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
-/// 권한 요청 버튼 클릭
+
+// 권한 요청 버튼 클릭
 document.getElementById("requestPermissionButton").addEventListener("click", () => {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission()
@@ -115,23 +116,23 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
             })
             .catch((error) => console.error("권한 요청 실패:", error));
     } else {
-        console.error("DeviceMotion API 권한 필요 없음.");
+        console.error("DeviceMotion 권한 요청 필요 없음.");
         resetTest();  // 초기화 후 리스너 시작
         initDeviceMotionListener(); // iOS 이외의 브라우저
     }
 });
 
-// **초기화 함수**
+// 초기화 함수
 function resetTest() {
     testStartTime = new Date().getTime();  // 테스트 시작 시간 초기화
+    lastTime = testStartTime;
     distance = 0;
     stepCount = 0;
     avgStrideLength = 0;
     totalTime = 0;
-    lastTime = testStartTime;  // 마지막 걸음 시간 초기화
 }
 
-// **DeviceMotion 리스너 등록**
+// DeviceMotion 리스너 등록
 function initDeviceMotionListener() {
     if (window.DeviceMotionEvent) {
         console.log("DeviceMotion API 지원됨.");
@@ -143,8 +144,7 @@ function initDeviceMotionListener() {
 
 // 계산 변수 초기화
 let testStartTime = new Date().getTime();
-let distance = 0, stepCount = 0, avgStrideLength = 0;
-let lastTime = testStartTime;
+let distance = 0, stepCount = 0, avgStrideLength = 0, totalTime = 0;
 let filteredAccY = 0;
 
 // 가속도 임계값
@@ -153,12 +153,9 @@ const STEP_THRESHOLD = 1.2;    // 걸음 검출 기준
 
 // 걸음 검출 주기
 let lastStepTime = 0;
-const STEP_DETECTION_INTERVAL = 500;  // 0.5초 주기
+const STEP_DETECTION_INTERVAL = 1000;  // 1초 주기
 
-// 총 이동 시간
-let totalTime = 0;
-
-// **DeviceMotion 이벤트 핸들러**
+// DeviceMotion 이벤트 핸들러
 function handleDeviceMotion(event) {
     const currentTime = new Date().getTime();
     const deltaTime = (currentTime - lastTime) / 1000;  // 초 단위 시간 차이
@@ -175,20 +172,20 @@ function handleDeviceMotion(event) {
         return;  // 노이즈로 간주하고 무시
     }
 
-    // **걸음 검출: 임계값 초과 및 주기 제한**
+    // 걸음 검출: 임계값 초과 및 주기 제한
     if (
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
-        // **이동 거리 계산 (보폭 반영)**
-        const stride = Math.abs(filteredAccY * deltaTime * 2);  // 보폭 계산
+        // **보폭 계산 (유동적 반영)**
+        const stride = Math.abs(filteredAccY * deltaTime);  // 가속도 * 시간
         distance += stride;
 
-        // **걸음 수 증가**
+        // 걸음 수 증가
         stepCount++;
         lastStepTime = currentTime;  // 마지막 걸음 검출 시간 업데이트
 
-        // **평균 보폭 실시간 업데이트**
+        // 평균 보폭 실시간 업데이트
         if (stepCount > 0) {
             avgStrideLength = distance / stepCount;  // 유동적 보폭 계산
         }
@@ -196,17 +193,15 @@ function handleDeviceMotion(event) {
 
     // 총 이동 시간 업데이트
     totalTime = (currentTime - testStartTime) / 1000;  // 초 단위 이동 시간 계산
-
     lastTime = currentTime;  // 마지막 업데이트 시간 갱신
 
     // **실시간 결과 출력**
     outputStrideData();
-    printCurrentState();  // 현재 변수 상태 출력
 }
 
-// **결과 출력 함수 (속도 계산 및 결과 표시)**
+// 결과 출력 함수 (속도 계산 및 결과 표시)
 function outputStrideData() {
-    // **속도 계산 (m/s)**
+    // 속도 계산 (m/s)
     const currentSpeed = totalTime > 0 ? (distance / totalTime).toFixed(2) : 0;
     const speedKmH = (currentSpeed * 3.6).toFixed(2);  // 속도를 km/h로 변환
 
@@ -221,16 +216,4 @@ function outputStrideData() {
             <br><strong>이동 시간:</strong> ${totalTime.toFixed(2)} 초
         `;
     }
-}
-
-// **현재 상태 변수 콘솔 출력 함수**
-function printCurrentState() {
-    console.log("==== 현재 변수 상태 ====");
-    console.log(`현재 시간 (lastTime): ${new Date(lastTime).toLocaleString()}`);
-    console.log(`이동 거리 (distance): ${distance.toFixed(2)} m`);
-    console.log(`걸음 수 (stepCount): ${stepCount}`);
-    console.log(`평균 보폭 길이 (avgStrideLength): ${avgStrideLength.toFixed(2)} m`);
-    console.log(`총 이동 시간 (totalTime): ${totalTime.toFixed(2)} 초`);
-    console.log(`현재 가속도 (filteredAccY): ${filteredAccY.toFixed(2)} m/s²`);
-    console.log(`======================`);
 }
