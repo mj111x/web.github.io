@@ -179,8 +179,7 @@ function handleDeviceMotion(event) {
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
         // 이동 거리 계산 (걸음마다 보폭 재계산)
-        const currentSpeed = (distance / totalTime).toFixed(2);
-        const stride = currentSpeed * deltaTime || 0.7;  // 보폭 계산
+        const stride = Math.abs(filteredAccY * deltaTime);  // 보폭 계산
         distance += stride;
 
         // 걸음 수 증가
@@ -188,7 +187,9 @@ function handleDeviceMotion(event) {
         lastStepTime = currentTime;  // 마지막 걸음 검출 시간 업데이트
 
         // 평균 보폭 실시간 업데이트
-        avgStrideLength = distance / stepCount;
+        if (stepCount > 0) {
+            avgStrideLength = distance / stepCount;  // 유동적 보폭 계산
+        }
     }
 
     lastTime = currentTime;  // 마지막 업데이트 시간 갱신
