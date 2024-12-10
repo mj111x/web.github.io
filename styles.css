@@ -26,29 +26,20 @@ h1 {
 }
 
 /* Raspberry Pi 정보 표시 영역 */
-#raspberryPiInfo {
+#raspberryPiInfo, #speedInfo {
     margin-top: 20px;
     font-size: 16px;
     color: #444;
     text-align: left;
     background-color: #f0f0f0;
-    padding: 10px;
+    padding: 15px;
     border-radius: 5px;
     display: block;
-    margin-top: 20px;
 }
 
-/* 상태 표시 */
-#status {
+/* 권한 요청 버튼 스타일 */
+#requestPermissionButton {
     margin-top: 20px;
-    font-size: 16px;
-    font-weight: bold;
-    color: #666;
-}
-
-/* 버튼 스타일 */
-#connectButton {
-    margin-top: 30px;
     padding: 10px 20px;
     background-color: #4CAF50;
     color: white;
@@ -56,34 +47,9 @@ h1 {
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s ease;
 }
 
-#connectButton:hover {
+#requestPermissionButton:hover {
     background-color: #45a049;
-}
-
-/* 상태 메시지 강조 */
-.connected {
-    color: green;
-}
-
-.disconnected {
-    color: red;
-}
-
-.waiting {
-    color: #f39c12;
-}
-
-/* 보폭 속도 출력 스타일 */
-#speedInfo {
-    font-size: 18px;
-    font-weight: bold;
-    color: #2c3e50;
-    margin-top: 20px;
-    background: #e8f5e9;
-    padding: 15px;
-    border-radius: 5px;
-    text-align: left;
 }

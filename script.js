@@ -99,33 +99,26 @@ socket.onerror = (error) => {
 socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
-// iOS Safari 권한 요청
-if (typeof DeviceMotionEvent.requestPermission === 'function') {
-    document.body.addEventListener('click', () => {
+document.getElementById("requestPermissionButton").addEventListener("click", () => {
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission()
             .then((response) => {
                 if (response === 'granted') {
                     console.log("가속도계 권한 허용됨!");
-                    initDeviceMotionListener();  // 보폭 계산 리스너 등록
+                    initDeviceMotionListener();  // 리스너 등록
                 } else {
                     console.error("가속도계 권한이 거부되었습니다.");
+                    alert("가속도계 권한이 필요합니다.");
                 }
             })
-            .catch(console.error);
-    });
-} else {
-    initDeviceMotionListener();  // 권한 요청이 필요 없는 경우
-}
-
-// DeviceMotion 이벤트 리스너 등록 함수
-function initDeviceMotionListener() {
-    if (window.DeviceMotionEvent) {
-        console.log("DeviceMotion API 지원됨.");
-        window.addEventListener("devicemotion", handleDeviceMotion);
+            .catch((error) => {
+                console.error("권한 요청 실패:", error);
+            });
     } else {
-        console.error("DeviceMotion API를 지원하지 않는 브라우저입니다.");
+        console.error("이 브라우저는 권한 요청이 필요하지 않습니다.");
+        initDeviceMotionListener();  // 권한 요청이 필요 없는 브라우저
     }
-}
+});
 
 // 보폭 계산 로직
 let lastTime = new Date().getTime();
