@@ -106,6 +106,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
             .then((response) => {
                 if (response === 'granted') {
                     console.log("가속도계 권한 허용됨!");
+                    resetTest();  // 초기화 후 리스너 시작
                     initDeviceMotionListener();
                 } else {
                     console.error("가속도계 권한 거부됨!");
@@ -115,9 +116,19 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
             .catch((error) => console.error("권한 요청 실패:", error));
     } else {
         console.error("DeviceMotion 권한 요청 필요 없음.");
+        resetTest();  // 초기화 후 리스너 시작
         initDeviceMotionListener(); // iOS 이외의 브라우저
     }
 });
+
+// 초기화 함수
+function resetTest() {
+    lastTime = new Date().getTime();  // 테스트 시작 시간 초기화
+    distance = 0;
+    stepCount = 0;
+    avgStrideLength = 0;
+    totalTime = 0;
+}
 
 // DeviceMotion 리스너 등록
 function initDeviceMotionListener() {
@@ -132,7 +143,7 @@ function initDeviceMotionListener() {
 // 계산 변수 초기화
 let lastTime = new Date().getTime();
 let distance = 0, stepCount = 0, avgStrideLength = 0;
-let lastAccY = 0, filteredAccY = 0;
+let filteredAccY = 0;
 
 // 가속도 임계값
 const NOISE_THRESHOLD = 0.2;   // 노이즈 제거 기준
@@ -143,16 +154,12 @@ let lastStepTime = 0;
 const STEP_DETECTION_INTERVAL = 1000;  // 1초 주기
 
 // 총 이동 시간
-let testStartTime = 0;
 let totalTime = 0;
 
 // DeviceMotion 이벤트 핸들러
 function handleDeviceMotion(event) {
     const currentTime = new Date().getTime();
     const deltaTime = (currentTime - lastTime) / 1000;  // 초 단위 시간 차이
-
-    // 테스트 시작 시간 기록
-    if (stepCount === 0) testStartTime = currentTime;
 
     // Y축 가속도 값 (중력 제거)
     const accY = event.acceleration?.y || 0;
@@ -171,8 +178,9 @@ function handleDeviceMotion(event) {
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
-        // 이동 거리 계산
-        distance += avgStrideLength || 0.7;  // 기본 보폭 0.7m 가정
+        // 이동 거리 계산 (평균 보폭 반영)
+        const stride = avgStrideLength || 0.7;  // 기본 보폭 0.7m 가정
+        distance += stride;
 
         // 걸음 수 증가
         stepCount++;
@@ -190,7 +198,7 @@ function handleDeviceMotion(event) {
 
 // 결과 출력 함수
 function outputStrideData(currentTime) {
-    totalTime = (currentTime - testStartTime) / 1000;  // 총 이동 시간 계산 (초)
+    totalTime = (currentTime - lastTime) / 1000;  // 총 이동 시간 계산 (초)
 
     const currentSpeed = totalTime > 0 ? (distance / totalTime).toFixed(2) : 0;  // 평균 속도 계산 (m/s)
     const speedKmH = (currentSpeed * 3.6).toFixed(2);  // 속도를 km/h로 변환
