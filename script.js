@@ -53,6 +53,7 @@ socket.onclose = () => {
 */
 // WebSocket 연결 및 메시지 처리
 // WebSocket 연결 설정
+// WebSocket 연결 설정
 const socket = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/:8080');
 
 socket.onopen = () => {
@@ -99,24 +100,17 @@ socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
 
-if (typeof DeviceMotionEvent.requestPermission === 'function') {
-    DeviceMotionEvent.requestPermission()
-      .then((response) => {
-        if (response === 'granted') {
-          console.log("가속도계 권한 허용됨!");
-        }
-      })
-      .catch(console.error);
-  }
-
-  
-// 보폭 속도 계산 설정
+// 보폭 속도 계산 및 업데이트 주기 측정 설정
 let lastTime = new Date().getTime();
 let speedY = 0, distance = 0, stepCount = 0;
 
 window.addEventListener("devicemotion", (event) => {
     const currentTime = new Date().getTime();
     const deltaTime = (currentTime - lastTime) / 1000;  // 초 단위 시간
+
+    // 주기 계산 및 출력
+    const updateInterval = event.interval || deltaTime * 1000; // ms 단위
+    console.log(`보폭 업데이트 주기: ${updateInterval.toFixed(2)} ms`);
 
     // Y축 가속도 (상하 이동)
     const accY = event.accelerationIncludingGravity.y || 0;
@@ -144,6 +138,7 @@ window.addEventListener("devicemotion", (event) => {
             <br><strong>이동 거리:</strong> ${distance.toFixed(2)} m
             <br><strong>걸음 수:</strong> ${stepCount}
             <br><strong>평균 보폭 길이:</strong> ${strideLength} m
+            <br><strong>업데이트 주기:</strong> ${updateInterval.toFixed(2)} ms
         `;
     }
 
