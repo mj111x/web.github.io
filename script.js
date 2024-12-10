@@ -129,9 +129,11 @@ function initDeviceMotionListener() {
     }
 }
 
-// 보폭 계산 변수
+// 보폭 계산 변수 초기화
 let lastTime = new Date().getTime();
-let speedY = 0, distance = 0, stepCount = 0, lastAccY = 0;
+let speedY = 0, distance = 0, stepCount = 0;
+let avgStrideLength = 0;  // 평균 보폭 길이
+let lastAccY = 0;
 
 // 가속도 검출 임계값
 const NOISE_THRESHOLD = 0.5;   // 노이즈 제거 기준
@@ -180,6 +182,15 @@ function handleDeviceMotion(event) {
     ) {
         stepCount++;
         lastStepTime = currentTime;  // 마지막 걸음 검출 시간 업데이트
+
+        // 보폭 계산 업데이트
+        const currentStrideLength = distance / stepCount;
+
+        // 보폭 길이 변화 체크 (20% 이상 변화 시 업데이트)
+        if (Math.abs(currentStrideLength - avgStrideLength) / avgStrideLength > 0.2) {
+            avgStrideLength = currentStrideLength;
+            console.log("보폭 길이 업데이트:", avgStrideLength.toFixed(2));
+        }
     }
 
     lastTime = currentTime;  // 마지막 업데이트 시간 갱신
@@ -187,15 +198,15 @@ function handleDeviceMotion(event) {
 
 // 보폭 정보 출력
 function outputStrideData() {
-    const strideLength = stepCount > 0 ? (distance / stepCount).toFixed(2) : 0;
+    const currentSpeed = (distance / 1).toFixed(2);  // 1초 평균 속도 계산
 
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
         speedInfoElement.innerHTML = `
-            <strong>걸음 속도:</strong> ${(distance / 1).toFixed(2)} m/s
+            <strong>걸음 속도:</strong> ${currentSpeed} m/s
             <br><strong>이동 거리:</strong> ${distance.toFixed(2)} m
             <br><strong>걸음 수:</strong> ${stepCount}
-            <br><strong>평균 보폭 길이:</strong> ${strideLength} m
+            <br><strong>평균 보폭 길이:</strong> ${avgStrideLength.toFixed(2)} m
         `;
     }
 }
