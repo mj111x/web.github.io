@@ -99,6 +99,7 @@ socket.onerror = (error) => {
 socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
+
 // 권한 요청 버튼 클릭
 document.getElementById("requestPermissionButton").addEventListener("click", () => {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -176,17 +177,17 @@ function handleDeviceMotion(event) {
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
-        // 보폭 계산
-        const stride = Math.abs(filteredAccY * deltaTime * 2);  // 유동적 보폭 계산
+        // **보폭 계산 수정**
+        const stride = Math.max(Math.abs(filteredAccY * deltaTime * 9.8), 0.5);  // 가속도 적용 보폭 계산
         distance += stride;
 
-        // 걸음 수 증가
+        // **걸음 수 증가**
         stepCount++;
         lastStepTime = currentTime;  // 마지막 걸음 검출 시간 업데이트
 
-        // 평균 보폭 실시간 업데이트
+        // **평균 보폭 실시간 업데이트**
         if (stepCount > 0) {
-            avgStrideLength = distance / stepCount;  // 보폭 업데이트
+            avgStrideLength = distance / stepCount;  // 유동적 보폭 계산
         }
     }
 
