@@ -217,8 +217,3 @@ function outputStrideData() {
 function calculateErrorRate(measured, expected) {
     return Math.abs((measured - expected) / expected) * 100;  // 오차 계산
 }
-
-// 5초마다 새로고침
-setTimeout(() => {
-    location.reload();
-}, 5000);
