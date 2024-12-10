@@ -129,28 +129,22 @@ function initDeviceMotionListener() {
     }
 }
 
-// 보폭 계산 변수 초기화
+// 계산 변수 초기화
 let lastTime = new Date().getTime();
 let distance = 0, stepCount = 0, avgStrideLength = 0;
 let lastAccY = 0, filteredAccY = 0;
 
-// 거리 검증 변수
-let expectedDistance = 10.0;   // 예상 이동 거리 (미터)
-let testStartTime = 0;         // 테스트 시작 시간
-let totalTime = 0;             // 총 이동 시간 (초)
-
-// 가속도 검출 임계값
-const NOISE_THRESHOLD = 0.5;   // 노이즈 제거 기준
-const STEP_THRESHOLD = 1.5;    // 걸음 검출 기준
+// 가속도 임계값
+const NOISE_THRESHOLD = 0.2;   // 노이즈 제거 기준
+const STEP_THRESHOLD = 1.2;    // 걸음 검출 기준
 
 // 걸음 검출 주기
 let lastStepTime = 0;
 const STEP_DETECTION_INTERVAL = 1000;  // 1초 주기
 
-// 속도 측정 결과 업데이트 (1초마다)
-setInterval(() => {
-    outputStrideData();
-}, 1000);  // 1초마다 업데이트
+// 총 이동 시간
+let testStartTime = 0;
+let totalTime = 0;
 
 // DeviceMotion 이벤트 핸들러
 function handleDeviceMotion(event) {
@@ -184,36 +178,30 @@ function handleDeviceMotion(event) {
         stepCount++;
         lastStepTime = currentTime;  // 마지막 걸음 검출 시간 업데이트
 
-        // 보폭 길이 계산
+        // 평균 보폭 계산
         avgStrideLength = distance / stepCount;
-
-        console.log("걸음 검출됨 - 보폭:", avgStrideLength.toFixed(2));
     }
 
     lastTime = currentTime;  // 마지막 업데이트 시간 갱신
+
+    // 실시간 결과 출력
+    outputStrideData(currentTime);
 }
 
-// 보폭 정보 출력
-function outputStrideData() {
-    const currentTime = new Date().getTime();
+// 결과 출력 함수
+function outputStrideData(currentTime) {
     totalTime = (currentTime - testStartTime) / 1000;  // 총 이동 시간 계산 (초)
 
-    const currentSpeed = (distance / totalTime).toFixed(2);  // 평균 속도 계산 (m/s)
+    const currentSpeed = totalTime > 0 ? (distance / totalTime).toFixed(2) : 0;  // 평균 속도 계산 (m/s)
+    const speedKmH = (currentSpeed * 3.6).toFixed(2);  // 속도를 km/h로 변환
 
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
         speedInfoElement.innerHTML = `
-            <strong>현재 속도:</strong> ${currentSpeed} m/s
+            <strong>현재 속도:</strong> ${currentSpeed} m/s (${speedKmH} km/h)
             <br><strong>이동 거리:</strong> ${distance.toFixed(2)} m
             <br><strong>걸음 수:</strong> ${stepCount}
             <br><strong>평균 보폭 길이:</strong> ${avgStrideLength.toFixed(2)} m
-            <br><strong>테스트 예상 거리:</strong> ${expectedDistance.toFixed(2)} m
-            <br><strong>오차율:</strong> ${calculateErrorRate(distance, expectedDistance).toFixed(2)}%
         `;
     }
-}
-
-// 테스트 결과 오차 계산 함수
-function calculateErrorRate(measured, expected) {
-    return Math.abs((measured - expected) / expected) * 100;  // 오차 계산
 }
