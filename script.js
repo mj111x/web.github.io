@@ -99,51 +99,70 @@ socket.onerror = (error) => {
 socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
+// 권한 요청 버튼 클릭 이벤트
 document.getElementById("requestPermissionButton").addEventListener("click", () => {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission()
             .then((response) => {
                 if (response === 'granted') {
                     console.log("가속도계 권한 허용됨!");
-                    initDeviceMotionListener();  // 리스너 등록
+                    initDeviceMotionListener();
                 } else {
-                    console.error("가속도계 권한이 거부되었습니다.");
+                    console.error("가속도계 권한 거부됨!");
                     alert("가속도계 권한이 필요합니다.");
                 }
             })
-            .catch((error) => {
-                console.error("권한 요청 실패:", error);
-            });
+            .catch((error) => console.error("권한 요청 실패:", error));
     } else {
-        console.error("이 브라우저는 권한 요청이 필요하지 않습니다.");
-        initDeviceMotionListener();  // 권한 요청이 필요 없는 브라우저
+        console.error("DeviceMotion 권한 요청 필요 없음.");
+        initDeviceMotionListener(); // iOS 이외의 브라우저
     }
 });
 
-// 보폭 계산 로직
+// DeviceMotion 리스너 등록 함수
+function initDeviceMotionListener() {
+    if (window.DeviceMotionEvent) {
+        console.log("DeviceMotion API 지원됨.");
+        window.addEventListener("devicemotion", handleDeviceMotion);
+    } else {
+        console.error("DeviceMotion API 미지원 브라우저입니다.");
+    }
+}
+
+// 보폭 계산 변수
 let lastTime = new Date().getTime();
 let speedY = 0, distance = 0, stepCount = 0;
 
+// 가속도 임계값 필터
+const NOISE_THRESHOLD = 0.5;  // 노이즈 필터
+const STEP_THRESHOLD = 1.5;   // 걸음 검출 기준 가속도 값
+
+// DeviceMotion 이벤트 핸들러
 function handleDeviceMotion(event) {
     const currentTime = new Date().getTime();
-    const deltaTime = (currentTime - lastTime) / 1000;  // 초 단위
+    const deltaTime = (currentTime - lastTime) / 1000;  // 초 단위 시간 차이
 
-    // Y축 가속도 (상하 이동)
-    const accY = event.accelerationIncludingGravity.y || 0;
+    // Y축 가속도 값 (중력 제거)
+    const accY = event.acceleration?.y || 0;
 
-    // 속도 계산
+    // 노이즈 필터 적용
+    if (Math.abs(accY) < NOISE_THRESHOLD) {
+        return;  // 노이즈로 간주하고 무시
+    }
+
+    // 속도 계산 (초당)
     speedY += accY * deltaTime;
 
     // 이동 거리 계산
     const deltaDistance = speedY * deltaTime;
     distance += Math.abs(deltaDistance);
 
-    // 걸음 인식: 특정 속도 임계값 초과 시 걸음으로 인식
-    if (Math.abs(accY) > 1.5) {
+    // 걸음 검출 (Y축 가속도 값이 일정 기준 초과 시)
+    if (Math.abs(accY) > STEP_THRESHOLD) {
         stepCount++;
     }
 
-    // 보폭 계산
+    // 보폭 계산 (걸음 수가 0 이상일 경우)
     const strideLength = stepCount > 0 ? (distance / stepCount).toFixed(2) : 0;
 
     // 보폭 정보 업데이트
@@ -157,5 +176,5 @@ function handleDeviceMotion(event) {
         `;
     }
 
-    lastTime = currentTime;  // 마지막 시간 업데이트
+    lastTime = currentTime;  // 마지막 업데이트 시간 갱신
 }
