@@ -178,15 +178,16 @@ function handleDeviceMotion(event) {
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
-        // 이동 거리 계산 (평균 보폭 반영)
-        const stride = avgStrideLength || 0.7;  // 기본 보폭 0.7m 가정
+        // 이동 거리 계산 (걸음마다 보폭 재계산)
+        const currentSpeed = (distance / totalTime).toFixed(2);
+        const stride = currentSpeed * deltaTime || 0.7;  // 보폭 계산
         distance += stride;
 
         // 걸음 수 증가
         stepCount++;
         lastStepTime = currentTime;  // 마지막 걸음 검출 시간 업데이트
 
-        // 평균 보폭 계산
+        // 평균 보폭 실시간 업데이트
         avgStrideLength = distance / stepCount;
     }
 
@@ -209,7 +210,7 @@ function outputStrideData(currentTime) {
             <strong>현재 속도:</strong> ${currentSpeed} m/s (${speedKmH} km/h)
             <br><strong>이동 거리:</strong> ${distance.toFixed(2)} m
             <br><strong>걸음 수:</strong> ${stepCount}
-            <br><strong>평균 보폭 길이:</strong> ${avgStrideLength.toFixed(2)} m
+            <br><strong>유동적 평균 보폭 길이:</strong> ${avgStrideLength.toFixed(2)} m
         `;
     }
 }
