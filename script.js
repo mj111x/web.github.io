@@ -99,6 +99,17 @@ socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
 
+if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    DeviceMotionEvent.requestPermission()
+      .then((response) => {
+        if (response === 'granted') {
+          console.log("가속도계 권한 허용됨!");
+        }
+      })
+      .catch(console.error);
+  }
+
+  
 // 보폭 속도 계산 설정
 let lastTime = new Date().getTime();
 let speedY = 0, distance = 0, stepCount = 0;
