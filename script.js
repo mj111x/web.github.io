@@ -131,22 +131,18 @@ function initDeviceMotionListener() {
 
 // 보폭 계산 변수 초기화
 let lastTime = new Date().getTime();
-let speedY = 0, distance = 0, stepCount = 0;
-let avgStrideLength = 0;  // 평균 보폭 길이
-let lastAccY = 0;
+let distance = 0, stepCount = 0, avgStrideLength = 0;
+let lastAccY = 0, filteredAccY = 0;
 
 // 가속도 검출 임계값
 const NOISE_THRESHOLD = 0.5;   // 노이즈 제거 기준
 const STEP_THRESHOLD = 1.5;    // 걸음 검출 기준
 
-// 저역 필터 변수
-let filteredAccY = 0;
-
-// 걸음 검출 주기 (0.5초마다 걸음 검출)
+// 걸음 검출 주기
 let lastStepTime = 0;
-const STEP_DETECTION_INTERVAL = 500;  // 0.5초
+const STEP_DETECTION_INTERVAL = 1000;  // 1초 주기
 
-// 측정 주기 설정 (1초마다 속도 출력)
+// 속도 측정 결과 업데이트 (1초마다)
 setInterval(() => {
     outputStrideData();
 }, 1000);  // 1초마다 업데이트
@@ -168,29 +164,22 @@ function handleDeviceMotion(event) {
         return;  // 노이즈로 간주하고 무시
     }
 
-    // 속도 계산 (초당)
-    speedY += filteredAccY * deltaTime;
-
-    // 이동 거리 계산
-    const deltaDistance = speedY * deltaTime;
-    distance += Math.abs(deltaDistance);
-
-    // 걸음 검출 (0.5초 주기 제한)
+    // 걸음 검출: 임계값 초과 및 주기 제한
     if (
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
+        // 이동 거리 계산
+        distance += avgStrideLength || 0.7;  // 초기 평균 보폭 0.7m 가정
+
+        // 걸음 수 증가
         stepCount++;
         lastStepTime = currentTime;  // 마지막 걸음 검출 시간 업데이트
 
-        // 보폭 계산 업데이트
-        const currentStrideLength = distance / stepCount;
+        // 보폭 길이 계산
+        avgStrideLength = distance / stepCount;
 
-        // 보폭 길이 변화 체크 (20% 이상 변화 시 업데이트)
-        if (Math.abs(currentStrideLength - avgStrideLength) / avgStrideLength > 0.2) {
-            avgStrideLength = currentStrideLength;
-            console.log("보폭 길이 업데이트:", avgStrideLength.toFixed(2));
-        }
+        console.log("걸음 검출됨 - 보폭:", avgStrideLength.toFixed(2));
     }
 
     lastTime = currentTime;  // 마지막 업데이트 시간 갱신
@@ -198,7 +187,7 @@ function handleDeviceMotion(event) {
 
 // 보폭 정보 출력
 function outputStrideData() {
-    const currentSpeed = (distance / 1).toFixed(2);  // 1초 평균 속도 계산
+    const currentSpeed = (distance / (stepCount || 1)).toFixed(2);  // 평균 속도 계산
 
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
@@ -210,3 +199,8 @@ function outputStrideData() {
         `;
     }
 }
+
+// 5초마다 새로고침
+setTimeout(() => {
+    location.reload();
+}, 5000);
