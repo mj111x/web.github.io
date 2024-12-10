@@ -134,6 +134,11 @@ let lastTime = new Date().getTime();
 let distance = 0, stepCount = 0, avgStrideLength = 0;
 let lastAccY = 0, filteredAccY = 0;
 
+// 거리 검증 변수
+let expectedDistance = 10.0;   // 예상 이동 거리 (미터)
+let testStartTime = 0;         // 테스트 시작 시간
+let totalTime = 0;             // 총 이동 시간 (초)
+
 // 가속도 검출 임계값
 const NOISE_THRESHOLD = 0.5;   // 노이즈 제거 기준
 const STEP_THRESHOLD = 1.5;    // 걸음 검출 기준
@@ -151,6 +156,9 @@ setInterval(() => {
 function handleDeviceMotion(event) {
     const currentTime = new Date().getTime();
     const deltaTime = (currentTime - lastTime) / 1000;  // 초 단위 시간 차이
+
+    // 테스트 시작 시간 기록
+    if (stepCount === 0) testStartTime = currentTime;
 
     // Y축 가속도 값 (중력 제거)
     const accY = event.acceleration?.y || 0;
@@ -170,7 +178,7 @@ function handleDeviceMotion(event) {
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
         // 이동 거리 계산
-        distance += avgStrideLength || 0.7;  // 초기 평균 보폭 0.7m 가정
+        distance += avgStrideLength || 0.7;  // 기본 보폭 0.7m 가정
 
         // 걸음 수 증가
         stepCount++;
@@ -187,17 +195,27 @@ function handleDeviceMotion(event) {
 
 // 보폭 정보 출력
 function outputStrideData() {
-    const currentSpeed = (distance / (stepCount || 1)).toFixed(2);  // 평균 속도 계산
+    const currentTime = new Date().getTime();
+    totalTime = (currentTime - testStartTime) / 1000;  // 총 이동 시간 계산 (초)
+
+    const currentSpeed = (distance / totalTime).toFixed(2);  // 평균 속도 계산 (m/s)
 
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
         speedInfoElement.innerHTML = `
-            <strong>걸음 속도:</strong> ${currentSpeed} m/s
+            <strong>현재 속도:</strong> ${currentSpeed} m/s
             <br><strong>이동 거리:</strong> ${distance.toFixed(2)} m
             <br><strong>걸음 수:</strong> ${stepCount}
             <br><strong>평균 보폭 길이:</strong> ${avgStrideLength.toFixed(2)} m
+            <br><strong>테스트 예상 거리:</strong> ${expectedDistance.toFixed(2)} m
+            <br><strong>오차율:</strong> ${calculateErrorRate(distance, expectedDistance).toFixed(2)}%
         `;
     }
+}
+
+// 테스트 결과 오차 계산 함수
+function calculateErrorRate(measured, expected) {
+    return Math.abs((measured - expected) / expected) * 100;  // 오차 계산
 }
 
 // 5초마다 새로고침
