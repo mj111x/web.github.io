@@ -52,32 +52,6 @@ socket.onclose = () => {
 };
 */
 
-// 계산 변수 초기화
-let testStartTime = new Date().getTime();
-let distance = 0, stepCount = 0, avgStrideLength = 0, totalTime = 0;
-let filteredAccY = 0;
-
-// 임계값 설정 (노이즈 제거 기준)
-const NOISE_THRESHOLD = 0.15;   // 노이즈 제거 기준
-const STEP_THRESHOLD = 1.1;     // 걸음 검출 기준
-
-// 걸음 검출 주기
-let lastStepTime = 0;
-const STEP_DETECTION_INTERVAL = 500;  // 0.5초 주기
-
-// 저역 필터 강도 설정
-const ALPHA = 0.7;  
-
-// 초기화 함수
-function resetTest() {
-    testStartTime = new Date().getTime();  // 테스트 시작 시간 초기화
-    distance = 0;
-    stepCount = 0;
-    avgStrideLength = 0;
-    totalTime = 0;
-    filteredAccY = 0;
-}
-
 // WebSocket 연결 설정
 const socket = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/:8080');
 
@@ -103,17 +77,52 @@ socket.onmessage = (event) => {
 // Raspberry Pi 정보 화면 출력
 function displayRaspberryPiInfo(data) {
     const infoElement = document.getElementById('raspberryPiInfo');
+
     if (infoElement) {
         const connectionTime = new Date(data.pingTime);  
         const formattedTime = connectionTime.toLocaleString();  
 
         infoElement.innerHTML = `
             <p><strong>Raspberry Pi ID:</strong> ${data.piId || '정보 없음'}</p>
-            <p><strong>신호 강도:</strong> ${data.signalStrength?.toFixed(2) || '정보 없음'}</p>
+            <p><strong>신호 강도:</strong> ${data.signalStrength ? data.signalStrength.toFixed(2) : '정보 없음'}</p>
             <p><strong>연결 시간:</strong> ${formattedTime || '정보 없음'}</p>
             <p><strong>파일 데이터:</strong> ${data.inputData || '파일 정보 없음'}</p>
         `;
     }
+}
+
+socket.onerror = (error) => {
+    console.log('WebSocket 에러:', error);
+};
+
+socket.onclose = () => {
+    console.log('WebSocket 연결이 종료되었습니다.');
+};
+
+// 계산 변수 초기화
+let testStartTime = new Date().getTime();
+let distance = 0, stepCount = 0, avgStrideLength = 0, totalTime = 0;
+let filteredAccY = 0;
+
+// 임계값 설정 (노이즈 제거 기준)
+const NOISE_THRESHOLD = 0.2;    // 노이즈 제거 기준
+const STEP_THRESHOLD = 1.0;     // 걸음 검출 기준
+
+// 걸음 검출 주기 (단위: ms)
+let lastStepTime = 0;
+const STEP_DETECTION_INTERVAL = 500;  // 최소 0.5초 간격
+
+// 저역 필터 강도 설정
+const ALPHA = 0.8;  
+
+// 초기화 함수
+function resetTest() {
+    testStartTime = new Date().getTime();  // 테스트 시작 시간 초기화
+    distance = 0;
+    stepCount = 0;
+    avgStrideLength = 0;
+    totalTime = 0;
+    filteredAccY = 0;
 }
 
 // 권한 요청 버튼 클릭
@@ -134,7 +143,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
     } else {
         console.error("DeviceMotion 권한 요청 필요 없음.");
         resetTest();  // 초기화 후 리스너 시작
-        initDeviceMotionListener(); // iOS 이외의 브라우저
+        initDeviceMotionListener(); 
     }
 });
 
@@ -156,7 +165,7 @@ function handleDeviceMotion(event) {
     // Y축 가속도 값 (중력 제거)
     const accY = event.acceleration?.y || 0;
 
-    // **저역 필터 적용 (노이즈 제거)**
+    // 저역 필터 적용 (노이즈 제거)
     filteredAccY = ALPHA * filteredAccY + (1 - ALPHA) * accY;
 
     // 노이즈 제거
@@ -164,20 +173,20 @@ function handleDeviceMotion(event) {
         return;  // 노이즈로 간주하고 무시
     }
 
-    // **걸음 검출: 임계값 초과 및 주기 제한**
+    // 걸음 검출: 임계값 초과 및 주기 제한
     if (
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
-        // **보폭 계산 (동적 계산)**
-        const stride = Math.abs(filteredAccY * deltaTime * 9.8); 
-        distance += stride;
+        // 보폭 계산 (최소 보폭 0.5m)
+        const stride = Math.max(Math.abs(filteredAccY * deltaTime * 9.8), 0.5); 
+        distance += stride;  // 이동 거리 업데이트
 
-        // **걸음 수 증가**
+        // 걸음 수 증가
         stepCount++;
         lastStepTime = currentTime;  // 마지막 걸음 검출 시간 업데이트
 
-        // **평균 보폭 계산 (동적 업데이트)**
+        // 평균 보폭 계산
         if (stepCount > 0) {
             avgStrideLength = distance / stepCount;  // 평균 보폭 계산
         }
