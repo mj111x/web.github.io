@@ -99,25 +99,26 @@ socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
 
-// 계산 변수 초기화
+
+// 초기화된 변수 선언
 let testStartTime = new Date().getTime();
+let lastStepTime = testStartTime;
+
 let distance = 0, stepCount = 0, avgStrideLength = 0, totalTime = 0;
 let filteredAccY = 0;
 
-// 임계값 설정 (노이즈 제거 기준)
-const NOISE_THRESHOLD = 0.2;    // 노이즈 제거 기준
-const STEP_THRESHOLD = 1.0;     // 걸음 검출 기준
+// 임계값 설정
+const NOISE_THRESHOLD = 0.2;      // 노이즈 제거 기준
+const STEP_THRESHOLD = 1.2;       // 걸음 검출 기준
+const STEP_DETECTION_INTERVAL = 500;  // 최소 걸음 간격 (ms)
+const MIN_STRIDE = 0.6;           // 최소 보폭 (m)
+const ALPHA = 0.8;                // 필터 강도 (저역 필터)
 
-// 걸음 검출 주기 (단위: ms)
-let lastStepTime = 0;
-const STEP_DETECTION_INTERVAL = 500;  // 최소 0.5초 간격
-
-// 저역 필터 강도 설정
-const ALPHA = 0.8;  
-
-// 초기화 함수
+// **초기화 함수**
 function resetTest() {
     testStartTime = new Date().getTime();  // 테스트 시작 시간 초기화
+    lastStepTime = testStartTime;
+
     distance = 0;
     stepCount = 0;
     avgStrideLength = 0;
@@ -125,14 +126,14 @@ function resetTest() {
     filteredAccY = 0;
 }
 
-// 권한 요청 버튼 클릭
+// 권한 요청 버튼 클릭 이벤트
 document.getElementById("requestPermissionButton").addEventListener("click", () => {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission()
             .then((response) => {
                 if (response === 'granted') {
                     console.log("가속도계 권한 허용됨!");
-                    resetTest();  // 초기화 후 리스너 시작
+                    resetTest();  
                     initDeviceMotionListener();
                 } else {
                     console.error("가속도계 권한 거부됨!");
@@ -142,8 +143,8 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
             .catch((error) => console.error("권한 요청 실패:", error));
     } else {
         console.error("DeviceMotion 권한 요청 필요 없음.");
-        resetTest();  // 초기화 후 리스너 시작
-        initDeviceMotionListener(); 
+        resetTest();  
+        initDeviceMotionListener();
     }
 });
 
@@ -157,7 +158,7 @@ function initDeviceMotionListener() {
     }
 }
 
-// DeviceMotion 이벤트 핸들러
+// **DeviceMotion 이벤트 핸들러**
 function handleDeviceMotion(event) {
     const currentTime = new Date().getTime();
     const deltaTime = (currentTime - lastStepTime) / 1000;  // 초 단위 시간 차이
@@ -173,39 +174,35 @@ function handleDeviceMotion(event) {
         return;  // 노이즈로 간주하고 무시
     }
 
-    // 걸음 검출: 임계값 초과 및 주기 제한
+    // 걸음 검출
     if (
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
-        // 보폭 계산 (최소 보폭 0.5m)
-        const stride = Math.max(Math.abs(filteredAccY * deltaTime * 9.8), 0.5); 
+        // **보폭 계산 공식 수정**
+        const stride = Math.max(Math.abs(filteredAccY * deltaTime * 9.8), MIN_STRIDE); 
         distance += stride;  // 이동 거리 업데이트
 
-        // 걸음 수 증가
+        // **걸음 수 증가**
         stepCount++;
         lastStepTime = currentTime;  // 마지막 걸음 검출 시간 업데이트
 
-        // 평균 보폭 계산
-        if (stepCount > 0) {
-            avgStrideLength = distance / stepCount;  // 평균 보폭 계산
-        }
+        // **평균 보폭 계산**
+        avgStrideLength = distance / stepCount;  
     }
 
-    // 총 이동 시간 업데이트
-    totalTime = (currentTime - testStartTime) / 1000;  // 초 단위 이동 시간 계산
+    // **총 이동 시간 계산**
+    totalTime = (currentTime - testStartTime) / 1000;  
 
-    // 결과 출력
+    // **결과 출력**
     outputStrideData();
 }
 
-// 결과 출력 함수 (속도 계산 및 결과 표시)
+// **결과 출력 함수**
 function outputStrideData() {
-    // 속도 계산 (m/s)
     const currentSpeed = totalTime > 0 ? (distance / totalTime).toFixed(2) : 0;
     const speedKmH = (currentSpeed * 3.6).toFixed(2);  // 속도를 km/h로 변환
 
-    // 결과 화면 표시
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
         speedInfoElement.innerHTML = `
