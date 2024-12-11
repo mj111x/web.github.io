@@ -99,7 +99,8 @@ socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
 
-// 변수 초기화
+
+// 초기 변수 초기화
 let testStartTime = new Date().getTime();
 let lastStepTime = testStartTime;
 
@@ -107,9 +108,9 @@ let distance = 0, stepCount = 0, avgStrideLength = 0, totalTime = 0;
 let filteredAccY = 0;
 
 // 보폭 및 걸음 설정
-const NOISE_THRESHOLD = 0.15;        // 노이즈 제거 기준
+const NOISE_THRESHOLD = 0.2;         // 노이즈 제거 기준
 const STEP_THRESHOLD = 1.0;         // 걸음 검출 기준
-const STEP_DETECTION_INTERVAL = 700; // 최소 걸음 간격 (ms)
+const STEP_DETECTION_INTERVAL = 800; // 최소 걸음 간격 (ms)
 const MIN_STRIDE = 0.4;              // 최소 보폭 (m)
 const MAX_STRIDE = 1.2;              // 최대 보폭 (m)
 const ALPHA = 0.85;                  // 필터 강도 (노이즈 제거)
@@ -168,8 +169,8 @@ function handleDeviceMotion(event) {
     // **저역 필터 적용 (노이즈 제거)**
     filteredAccY = ALPHA * filteredAccY + (1 - ALPHA) * accY;
 
-    // **노이즈 제거**
-    if (Math.abs(filteredAccY) < NOISE_THRESHOLD) {
+    // **노이즈 제거 (가속도 값이 임계값 이하일 경우 무시)**
+    if (Math.abs(filteredAccY) < NOISE_THRESHOLD || deltaTime <= 0) {
         return;  // 노이즈로 간주하고 무시
     }
 
@@ -178,8 +179,8 @@ function handleDeviceMotion(event) {
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
-        // **보폭 계산 공식 수정 (가속도 기반)**
-        let stride = Math.abs(filteredAccY * deltaTime * 9.8); 
+        // **보폭 계산 공식 수정 (중력 제거)**
+        let stride = Math.abs(filteredAccY * deltaTime); 
         stride = Math.min(Math.max(stride, MIN_STRIDE), MAX_STRIDE); 
 
         distance += stride;  // 이동 거리 업데이트
