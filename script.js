@@ -99,7 +99,6 @@ socket.onclose = () => {
     console.log('WebSocket 연결이 종료되었습니다.');
 };
 
-
 // 초기화된 변수 선언
 let testStartTime = new Date().getTime();
 let lastStepTime = testStartTime;
@@ -108,11 +107,12 @@ let distance = 0, stepCount = 0, avgStrideLength = 0, totalTime = 0;
 let filteredAccY = 0;
 
 // 임계값 설정
-const NOISE_THRESHOLD = 0.2;      // 노이즈 제거 기준
-const STEP_THRESHOLD = 1.2;       // 걸음 검출 기준
-const STEP_DETECTION_INTERVAL = 500;  // 최소 걸음 간격 (ms)
-const MIN_STRIDE = 0.6;           // 최소 보폭 (m)
-const ALPHA = 0.8;                // 필터 강도 (저역 필터)
+const NOISE_THRESHOLD = 0.2;         // 노이즈 제거 기준
+const STEP_THRESHOLD = 1.2;          // 걸음 검출 기준
+const STEP_DETECTION_INTERVAL = 500; // 최소 걸음 간격 (ms)
+const MIN_STRIDE = 0.3;              // 최소 보폭 (m)
+const MAX_STRIDE = 1.5;              // 최대 보폭 (m)
+const ALPHA = 0.8;                   // 필터 강도 (저역 필터)
 
 // **초기화 함수**
 function resetTest() {
@@ -166,28 +166,30 @@ function handleDeviceMotion(event) {
     // Y축 가속도 값 (중력 제거)
     const accY = event.acceleration?.y || 0;
 
-    // 저역 필터 적용 (노이즈 제거)
+    // **저역 필터 적용 (노이즈 제거)**
     filteredAccY = ALPHA * filteredAccY + (1 - ALPHA) * accY;
 
-    // 노이즈 제거
+    // **노이즈 제거 (가속도 값이 임계값 이하일 경우 무시)**
     if (Math.abs(filteredAccY) < NOISE_THRESHOLD) {
         return;  // 노이즈로 간주하고 무시
     }
 
-    // 걸음 검출
+    // **걸음 검출 로직**
     if (
         Math.abs(filteredAccY) > STEP_THRESHOLD &&
         currentTime - lastStepTime > STEP_DETECTION_INTERVAL
     ) {
         // **보폭 계산 공식 수정**
-        const stride = Math.max(Math.abs(filteredAccY * deltaTime * 9.8), MIN_STRIDE); 
+        let stride = Math.abs(filteredAccY * deltaTime * 9.8); 
+        stride = Math.min(Math.max(stride, MIN_STRIDE), MAX_STRIDE); 
+
         distance += stride;  // 이동 거리 업데이트
 
-        // **걸음 수 증가**
+        // **걸음 수 증가 및 마지막 걸음 시간 업데이트**
         stepCount++;
-        lastStepTime = currentTime;  // 마지막 걸음 검출 시간 업데이트
+        lastStepTime = currentTime;
 
-        // **평균 보폭 계산**
+        // **평균 보폭 계산 수정**
         avgStrideLength = distance / stepCount;  
     }
 
