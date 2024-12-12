@@ -211,7 +211,6 @@ function outputStrideData() {
             <strong>현재 속도:</strong> ${currentSpeed} m/s (${speedKmH} km/h)
             <br><strong>이동 거리:</strong> ${distance.toFixed(2)} m
             <br><strong>걸음 수:</strong> ${stepCount}
-            <br><strong>평균 보폭 길이:</strong> ${avgStrideLength.toFixed(2)} m
             <br><strong>이동 시간:</strong> ${totalTime.toFixed(2)} 초
         `;
     }
