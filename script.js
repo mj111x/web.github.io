@@ -1,3 +1,4 @@
+
 // ✅ 페이지 전환 기능
 document.getElementById("homeButton").addEventListener("click", () => {
     document.getElementById("homePage").classList.add("active");
@@ -45,28 +46,24 @@ function displayRaspberryPiInfo(data) {
     }
 }
 
-// ✅ 걸음 속도 측정 기능 (최적화된 버전)
+// ✅ 걸음 수 & 속도 측정 기능
 let stepCount = 0;
 let distance = 0;
 let lastStepTime = 0;
-let lastUpdateTime = 0;
 const avgStrideLength = 0.7; // 평균 보폭 (m)
-const STEP_THRESHOLD = 1.2; // 걸음 감지 임계값
-const STEP_INTERVAL = 400; // 최소 걸음 간격 (ms)
+const STEP_THRESHOLD = 1.2;
+const STEP_INTERVAL = 400;
 
 // 권한 요청 후 가속도 감지 시작
-document.getElementById("requestPermissionButton").addEventListener("click", () => {
+document.getElementById("requestPermissionButton").addEventListener("click", async () => {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
-        DeviceMotionEvent.requestPermission()
-            .then(response => {
-                if (response === 'granted') {
-                    console.log("가속도계 권한 허용됨!");
-                    startTracking();
-                } else {
-                    alert("가속도계 권한이 필요합니다.");
-                }
-            })
-            .catch(error => console.error("권한 요청 실패:", error));
+        const response = await DeviceMotionEvent.requestPermission();
+        if (response === 'granted') {
+            console.log("📌 가속도계 권한 허용됨!");
+            startTracking();
+        } else {
+            alert("가속도계 권한이 필요합니다.");
+        }
     } else {
         startTracking();
     }
@@ -75,11 +72,9 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
 // 걸음 감지 시작
 function startTracking() {
     if (window.DeviceMotionEvent) {
-        console.log("DeviceMotion 이벤트 등록됨.");
         window.addEventListener("devicemotion", handleDeviceMotion);
-        lastUpdateTime = new Date().getTime();
     } else {
-        console.error("이 브라우저는 가속도 센서를 지원하지 않습니다.");
+        alert("이 기기는 가속도 센서를 지원하지 않습니다.");
     }
 }
 
@@ -87,32 +82,22 @@ function startTracking() {
 function handleDeviceMotion(event) {
     const accY = event.accelerationIncludingGravity?.y || 0;
     const currentTime = new Date().getTime();
-    
-    // 🏃‍♂️ 걸음 감지 로직 (걸음 발생)
+
     if (Math.abs(accY) > STEP_THRESHOLD && (currentTime - lastStepTime) > STEP_INTERVAL) {
         stepCount++;
-        distance += avgStrideLength; // 보폭을 이용해 거리 계산
+        distance += avgStrideLength;
         lastStepTime = currentTime;
-    }
-
-    // ⏱ 속도 계산 (일정 시간마다 업데이트)
-    if (currentTime - lastUpdateTime > 1000) { // 1초마다 업데이트
-        updateSpeedInfo(currentTime);
-        lastUpdateTime = currentTime;
+        updateSpeedInfo();
     }
 }
 
-// 🚀 속도 정보 UI 업데이트
-function updateSpeedInfo(currentTime) {
-    const elapsedTime = (currentTime - lastStepTime) / 1000; // 마지막 걸음 이후 경과 시간(초)
-    const speed = elapsedTime > 0 ? (distance / elapsedTime) : 0; // 속도 (m/s)
-    const speedKmH = (speed * 3.6).toFixed(2); // 속도를 km/h로 변환
-
+// 속도 업데이트
+function updateSpeedInfo() {
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
         speedInfoElement.innerHTML = `
             <strong>걸음 수:</strong> ${stepCount} 걸음<br>
-            <strong>이동 거리:</strong> ${distance.toFixed(2)} m<br>
+            <strong>이동 거리:</strong> ${distance.toFixed(2)} m
             <strong>현재 속도:</strong> ${speed.toFixed(2)} m/s (${speedKmH} km/h)
         `;
     }

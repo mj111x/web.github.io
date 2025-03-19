@@ -19,7 +19,7 @@ body {
     text-align: center;
     width: 350px;
     flex-grow: 1;
-    margin-bottom: 60px;
+    margin-bottom: 60px; /* 하단 네비게이션 공간 확보 */
 }
 
 /* 페이지 스타일 */
