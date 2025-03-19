@@ -45,10 +45,17 @@ function displayRaspberryPiInfo(data) {
     }
 }
 
-// 걸음 속도 측정 기능
-let stepCount = 0, distance = 0, lastStepTime = new Date().getTime();
-const STEP_THRESHOLD = 1.0, STEP_INTERVAL = 800;
+// --- ✅ 걸음 속도 측정 기능 추가 ✅ ---
 
+// 걸음 및 속도 관련 변수
+let stepCount = 0;
+let distance = 0;
+let lastStepTime = new Date().getTime();
+const avgStrideLength = 0.7;  // 평균 보폭 (m)
+const STEP_THRESHOLD = 1.0;
+const STEP_INTERVAL = 800;
+
+// 걸음 속도 측정 시작 (권한 요청)
 document.getElementById("requestPermissionButton").addEventListener("click", () => {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission()
@@ -66,22 +73,32 @@ document.getElementById("requestPermissionButton").addEventListener("click", () 
     }
 });
 
+// 걸음 감지 및 속도 계산
 function handleDeviceMotion(event) {
     const accY = event.accelerationIncludingGravity?.y || 0;
     const currentTime = new Date().getTime();
+    const timeElapsed = (currentTime - lastStepTime) / 1000;  // 초 단위 변환
 
     if (Math.abs(accY) > STEP_THRESHOLD && currentTime - lastStepTime > STEP_INTERVAL) {
         stepCount++;
+        distance += avgStrideLength;  // 거리 계산
         lastStepTime = currentTime;
-        updateSpeedInfo();
+
+        updateSpeedInfo(timeElapsed);
     }
 }
 
-function updateSpeedInfo() {
+// 속도 정보 업데이트
+function updateSpeedInfo(timeElapsed) {
+    const speed = distance / timeElapsed;  // 속도 (m/s)
+    const speedKmH = (speed * 3.6).toFixed(2);  // km/h 변환
+
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
         speedInfoElement.innerHTML = `
-            <strong>걸음 수:</strong> ${stepCount} 걸음
+            <strong>걸음 수:</strong> ${stepCount} 걸음<br>
+            <strong>이동 거리:</strong> ${distance.toFixed(2)} m<br>
+            <strong>현재 속도:</strong> ${speed.toFixed(2)} m/s (${speedKmH} km/h)
         `;
     }
 }
