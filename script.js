@@ -1,4 +1,3 @@
-// ✅ 페이지 전환 기능
 document.getElementById("homeButton").addEventListener("click", () => {
     document.getElementById("homePage").classList.add("active");
     document.getElementById("myPage").classList.remove("active");
@@ -9,7 +8,6 @@ document.getElementById("myPageButton").addEventListener("click", () => {
     document.getElementById("myPage").classList.add("active");
 });
 
-// ✅ 권한 요청 및 걸음 속도 측정 기능
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
     try {
         if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -24,15 +22,14 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
             startTracking();
         }
     } catch (error) {
-        console.error("🚨 권한 요청 실패:", error);
         alert("권한 요청 중 오류 발생!");
     }
 });
 
-// ✅ 가속도 데이터 감지 시작
 function startTracking() {
     if (window.DeviceMotionEvent) {
-        window.addEventListener("devicemotion", handleDeviceMotion);
+        console.log("📌 가속도 감지 시작!");
+        window.addEventListener("devicemotion", handleDeviceMotion, true);
     } else {
         alert("🚨 이 기기는 가속도 센서를 지원하지 않습니다.");
     }
@@ -43,8 +40,8 @@ let stepCount = 0;
 let distance = 0;
 let lastStepTime = new Date().getTime();
 const avgStrideLength = 0.7;
-const STEP_THRESHOLD = 1.5; // 더 높은 감지 값으로 변경
-const STEP_INTERVAL = 600; // 최소 걸음 간격 증가
+const STEP_THRESHOLD = 1.2;
+const STEP_INTERVAL = 600;
 
 function handleDeviceMotion(event) {
     const accY = event.accelerationIncludingGravity?.y || 0;
@@ -60,11 +57,10 @@ function handleDeviceMotion(event) {
     }
 }
 
-// ✅ 속도 계산 및 UI 업데이트
 function updateSpeedInfo() {
     const currentTime = new Date().getTime();
     const elapsedTime = (currentTime - lastStepTime) / 1000;
-    const speed = distance / elapsedTime;
+    const speed = elapsedTime > 0 ? distance / elapsedTime : 0;
     const speedKmH = (speed * 3.6).toFixed(2);
 
     const speedInfoElement = document.getElementById("speedInfo");
