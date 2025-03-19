@@ -3,30 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raspberry Pi 정보</title>
+    <title>Home & My Page</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- 홈 화면 -->
-    <div class="container" id="home">
-        <h1>WebSocket 연결 테스트</h1>
-        <div id="raspberryPiInfo"></div>
-        <button id="requestPermissionButton">권한 허용</button>
-        <div id="speedInfo">속도 정보가 여기에 표시됩니다.</div>
-    </div>
+    <div class="container">
+        <!-- Home 화면 -->
+        <div id="homePage" class="page active">
+            <h1>WebSocket 연결 테스트</h1>
+            <div id="raspberryPiInfo"></div>
+            <button id="requestPermissionButton">권한 허용</button>
+            <div id="speedInfo">속도 정보가 여기에 표시됩니다.</div>
+        </div>
 
-    <!-- 마이페이지 화면 (초기에는 숨김) -->
-    <div class="container" id="mypage" style="display: none;">
-        <h1>마이 페이지</h1>
-        <p><strong>이름:</strong> 홍길동</p>
-        <p><strong>번호:</strong> 010-1234-5678</p>
+        <!-- My Page 화면 -->
+        <div id="myPage" class="page">
+            <h1>My Page</h1>
+            <p><strong>이름:</strong> 홍길동</p>
+            <p><strong>번호:</strong> 010-1234-5678</p>
+        </div>
     </div>
 
     <!-- 하단 네비게이션 바 -->
-    <nav class="bottom-nav">
-        <button class="nav-button" onclick="navigateTo('home')">Home</button>
-        <button class="nav-button" onclick="navigateTo('mypage')">My Page</button>
-    </nav>
+    <div class="bottom-nav">
+        <button id="homeButton">Home</button>
+        <button id="myPageButton">My Page</button>
+    </div>
 
     <script src="script.js"></script>
 </body>

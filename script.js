@@ -52,14 +52,24 @@ socket.onclose = () => {
 };
 */
 
+// 페이지 전환 기능
+document.getElementById("homeButton").addEventListener("click", () => {
+    document.getElementById("homePage").classList.add("active");
+    document.getElementById("myPage").classList.remove("active");
+});
+
+document.getElementById("myPageButton").addEventListener("click", () => {
+    document.getElementById("homePage").classList.remove("active");
+    document.getElementById("myPage").classList.add("active");
+});
+
 // WebSocket 연결 설정
 const socket = new WebSocket('wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/:8080');
-
 socket.onopen = () => {
     console.log("서버에 연결되었습니다.");
     const pingData = {
         type: 'ping',
-        id: '웹페이지-001',  
+        id: '웹페이지-001',
         signalStrength: Math.random() * 100
     };
     socket.send(JSON.stringify(pingData));
@@ -68,27 +78,17 @@ socket.onopen = () => {
 socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
     console.log('서버로부터 받은 메시지:', data);
-
     if (data.type === 'offer') {
         displayRaspberryPiInfo(data);
     }
 };
 
-socket.onerror = (error) => {
-    console.log('WebSocket 에러:', error);
-};
-
-socket.onclose = () => {
-    console.log('WebSocket 연결이 종료되었습니다.');
-};
-
-// Raspberry Pi 정보 화면 출력
+// Raspberry Pi 정보 표시
 function displayRaspberryPiInfo(data) {
     const infoElement = document.getElementById('raspberryPiInfo');
     if (infoElement) {
-        const connectionTime = new Date(data.pingTime);  
-        const formattedTime = connectionTime.toLocaleString();  
-
+        const connectionTime = new Date(data.pingTime);
+        const formattedTime = connectionTime.toLocaleString();
         infoElement.innerHTML = `
             <p><strong>Raspberry Pi ID:</strong> ${data.piId || '정보 없음'}</p>
             <p><strong>신호 강도:</strong> ${data.signalStrength ? data.signalStrength.toFixed(2) : '정보 없음'}</p>
@@ -98,34 +98,64 @@ function displayRaspberryPiInfo(data) {
     }
 }
 
-// 권한 요청 버튼 클릭 이벤트
-const requestButton = document.getElementById("requestPermissionButton");
-if (requestButton) {
-    requestButton.addEventListener("click", () => {
-        if (typeof DeviceMotionEvent.requestPermission === 'function') {
-            DeviceMotionEvent.requestPermission()
-                .then((response) => {
-                    if (response === 'granted') {
-                        console.log("가속도계 권한 허용됨!");
-                        initDeviceMotionListener();
-                    } else {
-                        alert("가속도계 권한이 필요합니다.");
-                    }
-                })
-                .catch((error) => console.error("권한 요청 실패:", error));
-        } else {
-            initDeviceMotionListener();
-        }
-    });
+// 권한 요청
+document.getElementById("requestPermissionButton").addEventListener("click", () => {
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        DeviceMotionEvent.requestPermission()
+            .then((response) => {
+                if (response === 'granted') {
+                    console.log("가속도계 권한 허용됨!");
+                    resetTest();
+                    initDeviceMotionListener();
+                } else {
+                    console.error("가속도계 권한 거부됨!");
+                    alert("가속도계 권한이 필요합니다.");
+                }
+            })
+            .catch((error) => console.error("권한 요청 실패:", error));
+    } else {
+        console.error("DeviceMotion 권한 요청 필요 없음.");
+        resetTest();
+        initDeviceMotionListener();
+    }
+});
+
+// DeviceMotion 리스너 설정
+function initDeviceMotionListener() {
+    if (window.DeviceMotionEvent) {
+        console.log("DeviceMotion API 지원됨.");
+        window.addEventListener("devicemotion", handleDeviceMotion);
+    } else {
+        console.error("DeviceMotion API 미지원 브라우저입니다.");
+    }
 }
 
-// 하단 네비게이션 이동 함수
-function navigateTo(page) {
-    if (page === 'home') {
-        document.getElementById("home").style.display = "block";
-        document.getElementById("mypage").style.display = "none";
-    } else if (page === 'mypage') {
-        document.getElementById("home").style.display = "none";
-        document.getElementById("mypage").style.display = "block";
+// 초기화 함수
+function resetTest() {
+    distance = 0;
+    stepCount = 0;
+    avgStrideLength = 0;
+    totalTime = 0;
+    filteredAccY = 0;
+}
+
+// DeviceMotion 이벤트 핸들러
+function handleDeviceMotion(event) {
+    const currentTime = new Date().getTime();
+    const accY = event.acceleration?.y || 0;
+
+    if (Math.abs(accY) > 1.0 && currentTime - lastStepTime > 800) {
+        stepCount++;
+        lastStepTime = currentTime;
+    }
+}
+
+// 데이터 출력
+function outputStrideData() {
+    const speedInfoElement = document.getElementById("speedInfo");
+    if (speedInfoElement) {
+        speedInfoElement.innerHTML = `
+            <strong>걸음 수:</strong> ${stepCount}
+        `;
     }
 }
