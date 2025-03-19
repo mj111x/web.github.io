@@ -50,19 +50,19 @@ function handleDeviceMotion(event) {
     console.log(`📊 가속도 값: Y=${accY.toFixed(3)}`);
 
     if (Math.abs(accY) > STEP_THRESHOLD && (currentTime - lastStepTime) > STEP_INTERVAL) {
+        let stepTime = (currentTime - lastStepTime) / 1000; // 걸음 간격 시간 (초)
         stepCount++;
         distance += avgStrideLength;
         lastStepTime = currentTime;
-        updateSpeedInfo();
+
+        let speed = stepTime > 0 ? avgStrideLength / stepTime : 0;
+        let speedKmH = (speed * 3.6).toFixed(2);
+
+        updateSpeedInfo(speed, speedKmH);
     }
 }
 
-function updateSpeedInfo() {
-    const currentTime = new Date().getTime();
-    const elapsedTime = (currentTime - lastStepTime) / 1000;
-    const speed = elapsedTime > 0 ? distance / elapsedTime : 0;
-    const speedKmH = (speed * 3.6).toFixed(2);
-
+function updateSpeedInfo(speed, speedKmH) {
     const speedInfoElement = document.getElementById("speedInfo");
     if (speedInfoElement) {
         speedInfoElement.innerHTML = `
