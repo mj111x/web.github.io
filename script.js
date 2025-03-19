@@ -41,7 +41,7 @@ let distance = 0;
 let lastStepTime = new Date().getTime();
 const avgStrideLength = 0.7; // 평균 보폭 (m)
 const STEP_THRESHOLD = 0.8; // 민감도 증가
-const STEP_INTERVAL = 30; // 걸음 간격 증가
+const STEP_INTERVAL = 400; // 걸음 간격 증가
 
 
 
