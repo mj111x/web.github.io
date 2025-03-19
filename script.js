@@ -39,9 +39,11 @@ function startTracking() {
 let stepCount = 0;
 let distance = 0;
 let lastStepTime = new Date().getTime();
-const avgStrideLength = 0.7;
-const STEP_THRESHOLD = 1.2;
-const STEP_INTERVAL = 600;
+const avgStrideLength = 0.7; // 평균 보폭 (m)
+const STEP_THRESHOLD = 0.8; // 민감도 증가
+const STEP_INTERVAL = 30; // 걸음 간격 증가
+
+
 
 function handleDeviceMotion(event) {
     const accY = event.accelerationIncludingGravity?.y || 0;
@@ -59,6 +61,8 @@ function handleDeviceMotion(event) {
         let speedKmH = (speed * 3.6).toFixed(2);
 
         updateSpeedInfo(speed, speedKmH);
+    } else {
+        updateSpeedInfo(0, 0); // 걸음이 감지되지 않으면 속도 0 유지
     }
 }
 
