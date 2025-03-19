@@ -71,6 +71,6 @@ button:hover {
     cursor: pointer;
 }
 
-.bottom-nav button:hover {
+bottom-nav button:hover {
     text-decoration: underline;
 }

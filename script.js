@@ -41,8 +41,8 @@ let distance = 0;
 let lastStepTime = new Date().getTime();
 let lastUpdateTime = new Date().getTime();
 const avgStrideLength = 0.7; // 평균 보폭 (m)
-const STEP_THRESHOLD = 1.2; // 걸음 감지 민감도 증가
-const STEP_INTERVAL = 400; // 걸음 간격 감소
+const STEP_THRESHOLD = 1.5; // 더 큰 움직임만 감지
+const STEP_INTERVAL = 500; // 걸음 간격 조정
 
 function handleDeviceMotion(event) {
     const accX = event.acceleration.x || 0;
@@ -50,12 +50,15 @@ function handleDeviceMotion(event) {
     const accZ = event.acceleration.z || 0;
     const currentTime = new Date().getTime();
 
-    // 📌 중력의 영향을 줄이기 위해 필터링 (폰이 흔들리는 경우 무시)
-    const netAccY = accY - 9.81; // 지구 중력 값 제거
-    console.log(`📊 가속도 값 (필터링): X=${accX.toFixed(3)}, Y=${netAccY.toFixed(3)}, Z=${accZ.toFixed(3)}`);
+    // 📌 너무 작은 움직임은 무시
+    if (Math.abs(accX) < 0.5 && Math.abs(accY) < 0.5 && Math.abs(accZ) < 0.5) {
+        return;
+    }
 
-    if (Math.abs(netAccY) > STEP_THRESHOLD && (currentTime - lastStepTime) > STEP_INTERVAL) {
-        let stepTime = (currentTime - lastStepTime) / 1000; // 걸음 간격 시간 (초)
+    // 📌 걸음 감지 기준 강화 (Y축만이 아니라 X, Z축 포함)
+    if (Math.abs(accY) > STEP_THRESHOLD && Math.abs(accX) < 2 && Math.abs(accZ) < 2 &&
+        (currentTime - lastStepTime) > STEP_INTERVAL) {
+        let stepTime = (currentTime - lastStepTime) / 1000;
         stepCount++;
         distance += avgStrideLength;
         lastStepTime = currentTime;
@@ -63,11 +66,11 @@ function handleDeviceMotion(event) {
         let speed = stepTime > 0 ? avgStrideLength / stepTime : 0;
         let speedKmH = (speed * 3.6).toFixed(2);
 
-        lastUpdateTime = currentTime; // 마지막 업데이트 시간 저장
+        lastUpdateTime = currentTime; 
         updateSpeedInfo(speed, speedKmH);
     }
 
-    // 2초 동안 걸음이 없으면 속도를 0으로 설정
+    // 📌 2초 동안 걸음이 없으면 속도를 0으로 설정
     if (currentTime - lastUpdateTime > 2000) {
         updateSpeedInfo(0, 0);
     }
