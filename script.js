@@ -121,6 +121,11 @@ if (requestButton) {
 
 // 하단 네비게이션 이동 함수
 function navigateTo(page) {
-    alert(page + '로 이동합니다.');
-    // 실제 페이지 이동 로직 추가 가능
+    if (page === 'home') {
+        document.getElementById("home").style.display = "block";
+        document.getElementById("mypage").style.display = "none";
+    } else if (page === 'mypage') {
+        document.getElementById("home").style.display = "none";
+        document.getElementById("mypage").style.display = "block";
+    }
 }
