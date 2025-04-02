@@ -85,7 +85,7 @@ function updateSpeedInfo(speed, speedKmH) {
 
 // ✅ WebSocket 연결 및 신호등 표시
 const trafficLight = document.getElementById("trafficLightIllustration");
-const socket = new WebSocket("ws://your-server-url"); // 서버 주소로 수정 필요
+const socket = new WebSocket("ws://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev"); // 서버 주소로 수정 필요
 
 socket.onopen = () => {
     console.log("✅ 서버 연결됨");
