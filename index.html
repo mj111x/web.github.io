@@ -1,29 +1,31 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Home & My Page</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="container">
     <div id="homePage" class="page active">
       <h1>WebSocket 연결 테스트</h1>
 
-      <!-- 🔵 파동 애니메이션 -->
-      <div class="radar-container">
+      <!-- 🔵 파동 애니메이션 (중앙 서버 연결 전 표시) -->
+      <div class="radar-container" id="radarAnimation">
         <div class="radar-wave"></div>
         <div class="radar-wave delay"></div>
       </div>
 
-      <div id="raspberryPiInfo"></div>
-      <button id="requestPermissionButton">권한 허용</button>
+      <!-- 🟢 속도 정보 -->
       <div id="speedInfo">속도 정보가 여기에 표시됩니다.</div>
 
-      <!-- 🟢 서버 연결 시 표시되는 신호등 -->
+      <!-- 버튼 -->
+      <button id="requestPermissionButton">권한 허용</button>
+
+      <!-- 🔴 신호등 이미지 (서버 연결 후 표시) -->
       <div id="trafficLightIllustration" style="display: none; margin-top: 20px;">
-        <img src="traffic-light.png" alt="신호등 일러스트" width="80">
+        <img src="traffic-light.png" alt="신호등 일러스트" width="80" />
       </div>
     </div>
 
