@@ -1,14 +1,16 @@
 let socketConnected = false;
 let currentSpeedKmH = 0;
 let lastStepTime = Date.now();
+let lastMovementTime = Date.now();
 const avgStrideLength = 0.7;
 const STEP_THRESHOLD = 1.5;
 const STEP_INTERVAL = 500;
+
 let connectionInterval = null;
+let speedInterval = null;
+let startedWalking = false;
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
-  console.log("🔘 버튼 눌림");
-
   try {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
       const response = await DeviceMotionEvent.requestPermission();
@@ -27,14 +29,12 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
 });
 
 function startTracking() {
-  console.log("📌 센서 권한 허용됨. 측정 시작!");
+  console.log("📌 측정 시작!");
   document.getElementById("requestPermissionButton").style.display = "none";
   document.getElementById("speedInfo").style.display = "block";
   document.getElementById("radarAnimation").style.display = "block";
 
   window.addEventListener("devicemotion", handleDeviceMotion, true);
-
-  // 3초마다 연결 시도 시작
   connectionInterval = setInterval(tryConnectToServer, 3000);
 }
 
@@ -54,10 +54,16 @@ function handleDeviceMotion(event) {
   ) {
     let stepTime = (currentTime - lastStepTime) / 1000;
     lastStepTime = currentTime;
+    lastMovementTime = currentTime;
 
     let speed = avgStrideLength / stepTime;
     currentSpeedKmH = parseFloat((speed * 3.6).toFixed(2));
     updateSpeedDisplay(currentSpeedKmH);
+
+    if (!startedWalking) {
+      startedWalking = true;
+      startSpeedUploadLoop(); // 1분마다 서버로 전송 시작
+    }
   }
 }
 
@@ -77,21 +83,42 @@ function tryConnectToServer() {
     socketConnected = true;
 
     clearInterval(connectionInterval);
-
-    // UI 전환
     document.getElementById("radarAnimation").style.display = "none";
     document.getElementById("trafficLightIllustration").style.display = "block";
 
-    // 서버에 등록 및 속도 전송
+    // 서버 등록
     socket.send(JSON.stringify({ type: "register", id: "20250001" }));
-    socket.send(JSON.stringify({
-      type: "speed_data",
-      id: "20250001",
-      speed: currentSpeedKmH
-    }));
+
+    // WebSocket 저장 (속도 전송에서 쓰기 위해)
+    window.mySocket = socket;
   };
 
   socket.onerror = (err) => {
-    console.warn("❌ 연결 실패. 다음 시도 대기 중...");
+    console.warn("❌ 서버 연결 실패. 재시도 대기 중...");
   };
+
+  socket.onmessage = (event) => {
+    console.log("📨 서버 메시지:", event.data);
+  };
+}
+
+function startSpeedUploadLoop() {
+  speedInterval = setInterval(() => {
+    const now = Date.now();
+    const idleTime = now - lastMovementTime;
+
+    if (idleTime > 2 * 60 * 1000) {
+      console.log("⏸️ 2분 이상 움직임 없음 - 속도 전송 중단");
+      return; // 전송 안 함
+    }
+
+    if (window.mySocket && window.mySocket.readyState === WebSocket.OPEN) {
+      console.log("🚀 서버로 속도 전송:", currentSpeedKmH);
+      window.mySocket.send(JSON.stringify({
+        type: "speed_data",
+        id: "20250001",
+        speed: currentSpeedKmH
+      }));
+    }
+  }, 60 * 1000); // 1분 간격
 }
