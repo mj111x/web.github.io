@@ -10,9 +10,21 @@
     <div class="container">
         <div id="homePage" class="page active">
             <h1>WebSocket 연결 테스트</h1>
+            
+            <!-- 🔵 파동 애니메이션 -->
+            <div class="radar-container">
+                <div class="radar-wave"></div>
+                <div class="radar-wave delay"></div>
+            </div>
+
             <div id="raspberryPiInfo"></div>
             <button id="requestPermissionButton">권한 허용</button>
             <div id="speedInfo">속도 정보가 여기에 표시됩니다.</div>
+
+            <!-- 🟢 신호등 이미지 (서버 연결 시 표시) -->
+            <div id="trafficLightIllustration" style="display: none; margin-top: 20px;">
+                <img src="traffic-light.png" alt="신호등 일러스트" width="80">
+            </div>
         </div>
 
         <div id="myPage" class="page">

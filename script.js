@@ -35,14 +35,13 @@ function startTracking() {
     }
 }
 
-// ✅ 걸음 감지 및 속도 측정
 let stepCount = 0;
 let distance = 0;
 let lastStepTime = new Date().getTime();
 let lastUpdateTime = new Date().getTime();
-const avgStrideLength = 0.7; // 평균 보폭 (m)
-const STEP_THRESHOLD = 1.5; // 더 큰 움직임만 감지
-const STEP_INTERVAL = 500; // 걸음 간격 조정
+const avgStrideLength = 0.7;
+const STEP_THRESHOLD = 1.5;
+const STEP_INTERVAL = 500;
 
 function handleDeviceMotion(event) {
     const accX = event.acceleration.x || 0;
@@ -50,12 +49,10 @@ function handleDeviceMotion(event) {
     const accZ = event.acceleration.z || 0;
     const currentTime = new Date().getTime();
 
-    // 📌 너무 작은 움직임은 무시
     if (Math.abs(accX) < 0.5 && Math.abs(accY) < 0.5 && Math.abs(accZ) < 0.5) {
         return;
     }
 
-    // 📌 걸음 감지 기준 강화 (Y축만이 아니라 X, Z축 포함)
     if (Math.abs(accY) > STEP_THRESHOLD && Math.abs(accX) < 2 && Math.abs(accZ) < 2 &&
         (currentTime - lastStepTime) > STEP_INTERVAL) {
         let stepTime = (currentTime - lastStepTime) / 1000;
@@ -66,11 +63,10 @@ function handleDeviceMotion(event) {
         let speed = stepTime > 0 ? avgStrideLength / stepTime : 0;
         let speedKmH = (speed * 3.6).toFixed(2);
 
-        lastUpdateTime = currentTime; 
+        lastUpdateTime = currentTime;
         updateSpeedInfo(speed, speedKmH);
     }
 
-    // 📌 2초 동안 걸음이 없으면 속도를 0으로 설정
     if (currentTime - lastUpdateTime > 2000) {
         updateSpeedInfo(0, 0);
     }
@@ -86,3 +82,17 @@ function updateSpeedInfo(speed, speedKmH) {
         `;
     }
 }
+
+// ✅ WebSocket 연결 및 신호등 표시
+const trafficLight = document.getElementById("trafficLightIllustration");
+const socket = new WebSocket("ws://your-server-url"); // 서버 주소로 수정 필요
+
+socket.onopen = () => {
+    console.log("✅ 서버 연결됨");
+    trafficLight.style.display = "block";
+};
+
+socket.onerror = (error) => {
+    console.error("🚨 서버 연결 실패", error);
+    trafficLight.style.display = "none";
+};
