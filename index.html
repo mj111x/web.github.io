@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Home & My Page</title>
+  <title>Web Walking Tracker</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -11,19 +11,19 @@
     <div id="homePage" class="page active">
       <h1>WebSocket 연결 테스트</h1>
 
-      <!-- 🔵 파동 애니메이션 (중앙 서버 연결 전 표시) -->
+      <!-- 🔵 파동 애니메이션 (중앙 서버 연결 전까지 표시) -->
       <div class="radar-container" id="radarAnimation">
         <div class="radar-wave"></div>
         <div class="radar-wave delay"></div>
       </div>
 
-      <!-- 🟢 속도 정보 -->
+      <!-- 🟢 속도 정보 (버튼 바로 위에 위치) -->
       <div id="speedInfo">속도 정보가 여기에 표시됩니다.</div>
 
-      <!-- 버튼 -->
-      <button id="requestPermissionButton">권한 허용</button>
+      <!-- (선택사항) 권한 버튼 - 자동 측정되므로 필요 없으면 삭제 가능 -->
+      <!-- <button id="requestPermissionButton">권한 허용</button> -->
 
-      <!-- 🔴 신호등 이미지 (서버 연결 후 표시) -->
+      <!-- 🔴 서버 연결 후 신호등 일러스트 표시 -->
       <div id="trafficLightIllustration" style="display: none; margin-top: 20px;">
         <img src="traffic-light.png" alt="신호등 일러스트" width="80" />
       </div>
