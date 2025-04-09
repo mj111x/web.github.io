@@ -5,10 +5,10 @@ let lastMovementTime = Date.now();
 const avgStrideLength = 0.7;
 const STEP_THRESHOLD = 1.5;
 const STEP_INTERVAL = 500;
+
 let connectionInterval = null;
 let speedInterval = null;
 let startedWalking = false;
-let currentLocation = { latitude: null, longitude: null };
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   try {
@@ -36,22 +36,6 @@ function startTracking() {
 
   window.addEventListener("devicemotion", handleDeviceMotion, true);
   connectionInterval = setInterval(tryConnectToServer, 3000);
-
-  navigator.geolocation.watchPosition(
-    (position) => {
-      currentLocation.latitude = position.coords.latitude;
-      currentLocation.longitude = position.coords.longitude;
-      console.log("📍 위치 업데이트:", currentLocation);
-    },
-    (error) => {
-      console.warn("❌ 위치 추적 실패:", error.message);
-    },
-    {
-      enableHighAccuracy: true,
-      maximumAge: 10000,
-      timeout: 10000
-    }
-  );
 }
 
 function handleDeviceMotion(event) {
@@ -92,13 +76,13 @@ function tryConnectToServer() {
   if (socketConnected) return;
 
   console.log("🔄 중앙 서버 연결 시도 중...");
-  const socket = new WebSocket("ws://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/");
+  const socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
 
   socket.onopen = () => {
     console.log("✅ 중앙 서버 연결 완료!");
     socketConnected = true;
-
     clearInterval(connectionInterval);
+
     document.getElementById("radarAnimation").style.display = "none";
     document.getElementById("trafficLightIllustration").style.display = "block";
 
@@ -126,12 +110,11 @@ function startSpeedUploadLoop() {
     }
 
     if (window.mySocket && window.mySocket.readyState === WebSocket.OPEN) {
-      console.log("🚀 서버로 속도 + 위치 전송:", currentSpeedKmH, currentLocation);
+      console.log("🚀 서버로 속도 전송:", currentSpeedKmH);
       window.mySocket.send(JSON.stringify({
         type: "speed_data",
         id: "20250001",
-        speed: currentSpeedKmH,
-        location: currentLocation
+        speed: currentSpeedKmH
       }));
     }
   }, 60 * 1000);
