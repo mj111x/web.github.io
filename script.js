@@ -81,12 +81,14 @@ function tryConnectToServer() {
   socket.onopen = () => {
     console.log("✅ 중앙 서버 연결 완료!");
     socketConnected = true;
-    clearInterval(connectionInterval);
 
+    clearInterval(connectionInterval);
     document.getElementById("radarAnimation").style.display = "none";
     document.getElementById("trafficLightIllustration").style.display = "block";
 
-    socket.send(JSON.stringify({ type: "register", id: "20250001" }));
+    // 서버 등록
+    socket.send(JSON.stringify({ type: "register", id: "web20250001" }));
+
     window.mySocket = socket;
   };
 
@@ -109,13 +111,24 @@ function startSpeedUploadLoop() {
       return;
     }
 
-    if (window.mySocket && window.mySocket.readyState === WebSocket.OPEN) {
-      console.log("🚀 서버로 속도 전송:", currentSpeedKmH);
-      window.mySocket.send(JSON.stringify({
-        type: "speed_data",
-        id: "20250001",
-        speed: currentSpeedKmH
-      }));
-    }
+    sendSpeedToServer();
   }, 60 * 1000);
+}
+
+function sendSpeedToServer() {
+  if (window.mySocket && window.mySocket.readyState === WebSocket.OPEN) {
+    navigator.geolocation.getCurrentPosition((position) => {
+      const data = {
+        type: "speed_data",
+        id: "web20250001",
+        speed: currentSpeedKmH,
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude
+      };
+      console.log("📡 속도 및 위치 전송:", data);
+      window.mySocket.send(JSON.stringify(data));
+    }, (err) => {
+      console.warn("🚫 위치 가져오기 실패:", err);
+    });
+  }
 }
