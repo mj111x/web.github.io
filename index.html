@@ -3,26 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>걷기 위치 추적기</title>
+  <title>Web 걷기 센서</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="container">
     <h1>WebSocket 연결 테스트</h1>
 
-    <!-- 파동 애니메이션 -->
     <div class="radar-container" id="radarAnimation" style="display: none;">
       <div class="radar-wave"></div>
       <div class="radar-wave delay"></div>
     </div>
 
-    <!-- 속도 정보 -->
     <div id="speedInfo" style="display: none;">속도 정보가 여기에 표시됩니다.</div>
 
-    <!-- 센서 권한 버튼 -->
     <button id="requestPermissionButton">센서 및 위치 권한 허용</button>
 
-    <!-- 신호등 이미지 -->
     <div id="trafficLightIllustration" style="display: none; margin-top: 20px;">
       <img src="traffic-light.png" alt="신호등 일러스트" width="80" />
     </div>
