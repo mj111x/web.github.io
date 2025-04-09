@@ -5,10 +5,10 @@ let lastMovementTime = Date.now();
 const avgStrideLength = 0.7;
 const STEP_THRESHOLD = 1.5;
 const STEP_INTERVAL = 500;
-
 let connectionInterval = null;
 let speedInterval = null;
 let startedWalking = false;
+let currentLocation = { latitude: null, longitude: null };
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   try {
@@ -36,6 +36,22 @@ function startTracking() {
 
   window.addEventListener("devicemotion", handleDeviceMotion, true);
   connectionInterval = setInterval(tryConnectToServer, 3000);
+
+  navigator.geolocation.watchPosition(
+    (position) => {
+      currentLocation.latitude = position.coords.latitude;
+      currentLocation.longitude = position.coords.longitude;
+      console.log("📍 위치 업데이트:", currentLocation);
+    },
+    (error) => {
+      console.warn("❌ 위치 추적 실패:", error.message);
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 10000,
+      timeout: 10000
+    }
+  );
 }
 
 function handleDeviceMotion(event) {
@@ -62,7 +78,7 @@ function handleDeviceMotion(event) {
 
     if (!startedWalking) {
       startedWalking = true;
-      startSpeedUploadLoop(); // 1분마다 서버로 전송 시작
+      startSpeedUploadLoop();
     }
   }
 }
@@ -86,10 +102,7 @@ function tryConnectToServer() {
     document.getElementById("radarAnimation").style.display = "none";
     document.getElementById("trafficLightIllustration").style.display = "block";
 
-    // 서버 등록
     socket.send(JSON.stringify({ type: "register", id: "20250001" }));
-
-    // WebSocket 저장 (속도 전송에서 쓰기 위해)
     window.mySocket = socket;
   };
 
@@ -109,16 +122,17 @@ function startSpeedUploadLoop() {
 
     if (idleTime > 2 * 60 * 1000) {
       console.log("⏸️ 2분 이상 움직임 없음 - 속도 전송 중단");
-      return; // 전송 안 함
+      return;
     }
 
     if (window.mySocket && window.mySocket.readyState === WebSocket.OPEN) {
-      console.log("🚀 서버로 속도 전송:", currentSpeedKmH);
+      console.log("🚀 서버로 속도 + 위치 전송:", currentSpeedKmH, currentLocation);
       window.mySocket.send(JSON.stringify({
         type: "speed_data",
         id: "20250001",
-        speed: currentSpeedKmH
+        speed: currentSpeedKmH,
+        location: currentLocation
       }));
     }
-  }, 60 * 1000); // 1분 간격
+  }, 60 * 1000);
 }
