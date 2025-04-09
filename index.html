@@ -1,30 +1,26 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Web 걷기 센서</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div class="container">
-    <h1>WebSocket 연결 테스트</h1>
+    <h1>WebSocket 걷기 센서</h1>
 
-    <!-- 🔵 파동 애니메이션 -->
     <div class="radar-container" id="radarAnimation" style="display: none;">
       <div class="radar-wave"></div>
       <div class="radar-wave delay"></div>
     </div>
 
-    <!-- 🟢 속도 정보 -->
     <div id="speedInfo" style="display: none;">속도 정보가 여기에 표시됩니다.</div>
 
-    <!-- 권한 허용 버튼 -->
     <button id="requestPermissionButton">센서 권한 허용</button>
 
-    <!-- 신호등 이미지 -->
-    <div id="trafficLightIllustration" style="display: none; margin-top: 20px;">
-      <img src="traffic-light.png" alt="신호등 일러스트" width="80" />
+    <div id="trafficLightIllustration" style="display: none;">
+      <img src="traffic-light.png" alt="신호등" width="80">
     </div>
   </div>
 
