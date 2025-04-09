@@ -2,8 +2,6 @@ let socketConnected = false;
 let currentSpeedKmH = 0;
 let lastStepTime = Date.now();
 let lastMovementTime = Date.now();
-let currentLat = null;
-let currentLng = null;
 const avgStrideLength = 0.7;
 const STEP_THRESHOLD = 1.5;
 const STEP_INTERVAL = 500;
@@ -11,6 +9,9 @@ const STEP_INTERVAL = 500;
 let connectionInterval = null;
 let speedInterval = null;
 let startedWalking = false;
+
+let currentLat = null;
+let currentLng = null;
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   try {
@@ -36,9 +37,27 @@ function startTracking() {
   document.getElementById("speedInfo").style.display = "block";
   document.getElementById("radarAnimation").style.display = "block";
 
+  startLocationTracking();
   window.addEventListener("devicemotion", handleDeviceMotion, true);
   connectionInterval = setInterval(tryConnectToServer, 3000);
-  startLocationTracking();
+}
+
+function startLocationTracking() {
+  if (!navigator.geolocation) {
+    console.warn("❗ 위치 정보 지원 안됨");
+    return;
+  }
+
+  navigator.geolocation.watchPosition(
+    (position) => {
+      currentLat = position.coords.latitude;
+      currentLng = position.coords.longitude;
+    },
+    (err) => {
+      console.error("📍 위치 추적 실패:", err);
+    },
+    { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+  );
 }
 
 function handleDeviceMotion(event) {
@@ -79,7 +98,7 @@ function tryConnectToServer() {
   if (socketConnected) return;
 
   console.log("🔄 중앙 서버 연결 시도 중...");
-  const socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000");
+  const socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/");
 
   socket.onopen = () => {
     console.log("✅ 중앙 서버 연결 완료!");
@@ -89,13 +108,7 @@ function tryConnectToServer() {
     document.getElementById("radarAnimation").style.display = "none";
     document.getElementById("trafficLightIllustration").style.display = "block";
 
-    // 서버에 웹 클라이언트 등록
-    socket.send(JSON.stringify({
-      type: "register",
-      device: "web",
-      id: "20250001"
-    }));
-
+    socket.send(JSON.stringify({ type: "register", id: "20250001" }));
     window.mySocket = socket;
   };
 
@@ -128,26 +141,9 @@ function startSpeedUploadLoop() {
           longitude: currentLng
         }
       };
-      console.log("🚀 서버로 속도 전송:", data);
+
+      console.log("🚀 서버로 전송할 데이터:", data);
       window.mySocket.send(JSON.stringify(data));
     }
   }, 5000); // 5초마다 전송
-}
-
-function startLocationTracking() {
-  if (!navigator.geolocation) {
-    console.warn("❗ 위치 정보 지원 안됨");
-    return;
-  }
-
-  navigator.geolocation.watchPosition(
-    (position) => {
-      currentLat = position.coords.latitude;
-      currentLng = position.coords.longitude;
-    },
-    (err) => {
-      console.error("📍 위치 추적 실패:", err);
-    },
-    { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
-  );
 }
