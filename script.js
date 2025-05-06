@@ -12,6 +12,21 @@ const MAX_SPEED_KMH = 3;
 const MIN_VALID_SPEED = 0.1;
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
+  // iOS 센서 권한
+  if (typeof DeviceMotionEvent?.requestPermission === "function") {
+    try {
+      const motionPermission = await DeviceMotionEvent.requestPermission();
+      if (motionPermission !== "granted") {
+        alert("센서 권한이 필요합니다.");
+        return;
+      }
+    } catch (err) {
+      alert("센서 권한 요청 실패");
+      return;
+    }
+  }
+
+  // 위치 권한 요청 (초기 1회)
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -19,29 +34,18 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
         currentLongitude = pos.coords.longitude;
         document.getElementById("lat").textContent = currentLatitude.toFixed(6);
         document.getElementById("lon").textContent = currentLongitude.toFixed(6);
+        startTracking(); // 위치 확인 후 시작
       },
-      (err) => console.warn("❌ 위치 권한 거부:", err.message),
+      (err) => {
+        alert("위치 권한이 필요합니다.");
+        console.warn("위치 권한 거부:", err.message);
+      },
       {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 0
       }
     );
-  }
-
-  if (typeof DeviceMotionEvent?.requestPermission === "function") {
-    try {
-      const result = await DeviceMotionEvent.requestPermission();
-      if (result === "granted") {
-        startTracking();
-      } else {
-        alert("센서 권한이 거부되었습니다.");
-      }
-    } catch (err) {
-      alert("센서 권한 요청 중 오류 발생");
-    }
-  } else {
-    startTracking();
   }
 });
 
