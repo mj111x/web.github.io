@@ -48,6 +48,7 @@ window.addEventListener("load", async () => {
 
 function startTracking() {
   console.log("📡 트래킹 시작됨");
+
   document.getElementById("speedInfo").style.display = "block";
   document.getElementById("gpsInfo").style.display = "block";
   document.getElementById("radarAnimation").style.display = "block";
@@ -96,6 +97,10 @@ function connectToServer() {
     console.log("✅ WebSocket 연결됨");
     socket.send(JSON.stringify({ type: "register", id: userId }));
     startUploadLoop();
+
+    // ✅ 연결 성공 시 UI 전환
+    document.getElementById("radarAnimation").style.display = "none";
+    document.getElementById("trafficLightIllustration").style.display = "block";
   };
 
   socket.onmessage = (e) => console.log("📨 서버 메시지:", e.data);
