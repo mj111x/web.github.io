@@ -6,8 +6,9 @@ let socket = null;
 
 const userId = "20250001";
 const avgStrideLength = 0.7;
-const STEP_INTERVAL = 300;
-const STEP_THRESHOLD = 0.5;
+const STEP_INTERVAL = 400;
+const STEP_THRESHOLD = 1.2; // 낮은 민감도
+const MAX_SPEED_KMH = 10;   // 최대 속도 제한
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   if (navigator.geolocation) {
@@ -66,8 +67,8 @@ function handleDeviceMotion(event) {
   if (Math.abs(accY) > STEP_THRESHOLD && now - lastStepTime > STEP_INTERVAL) {
     const stepTime = (now - lastStepTime) / 1000;
     lastStepTime = now;
-    const speed = avgStrideLength / stepTime;
-    currentSpeedKmH = +(speed * 3.6).toFixed(2);
+    let speed = avgStrideLength / stepTime;
+    currentSpeedKmH = +(Math.min(speed * 3.6, MAX_SPEED_KMH).toFixed(2));
     updateSpeedDisplay(currentSpeedKmH);
   }
 }
@@ -109,7 +110,7 @@ function startUploadLoop() {
   }, 3000);
 }
 
-// 🧭 하단 탭 전환
+// 하단 탭 전환
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
   document.getElementById("mypage").style.display = "none";
