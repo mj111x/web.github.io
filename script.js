@@ -11,7 +11,6 @@ const STEP_THRESHOLD = 2.5;
 const MAX_SPEED_KMH = 3;
 const MIN_VALID_SPEED = 0.1;
 
-// 이전에 보낸 값 저장
 let lastSentAverage = 0;
 let lastSentLat = null;
 let lastSentLon = null;
@@ -91,13 +90,14 @@ function handleDeviceMotion(event) {
 }
 
 function connectToServer() {
-  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
+  socket = new WebSocket("wss://YOUR_REPLIT_SERVER_URL_HERE");
 
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId }));
     startUploadLoop();
     document.getElementById("radarAnimation").style.display = "none";
     document.getElementById("trafficLightIllustration").style.display = "block";
+    document.getElementById("speedInfo").style.display = "block";
   };
 
   socket.onerror = (e) => console.error("WebSocket 오류:", e);
@@ -113,13 +113,14 @@ function startUploadLoop() {
     const lat = +currentLatitude.toFixed(6);
     const lon = +currentLongitude.toFixed(6);
 
-    const hasChanged =
-      avg !== lastSentAverage || lat !== lastSentLat || lon !== lastSentLon;
+    // 웹 UI에 항상 표시
+    document.getElementById("speedInfo").innerHTML =
+      `평균 속도: ${avg} km/h<br>위도: ${lat}<br>경도: ${lon}`;
+
+    // 서버로는 값이 바뀌었을 때만 전송
+    const hasChanged = avg !== lastSentAverage || lat !== lastSentLat || lon !== lastSentLon;
 
     if (hasChanged) {
-      document.getElementById("speedInfo").innerHTML =
-        `평균 속도: ${avg} km/h<br>위도: ${lat}<br>경도: ${lon}`;
-
       const payload = {
         type: "web_data",
         id: userId,
@@ -127,7 +128,6 @@ function startUploadLoop() {
         location: { latitude: lat, longitude: lon }
       };
       socket.send(JSON.stringify(payload));
-
       lastSentAverage = avg;
       lastSentLat = lat;
       lastSentLon = lon;
@@ -135,11 +135,11 @@ function startUploadLoop() {
   }, 3000);
 }
 
+// 탭 전환
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
   document.getElementById("mypage").style.display = "none";
 });
-
 document.getElementById("mypageBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "none";
   document.getElementById("mypage").style.display = "block";
