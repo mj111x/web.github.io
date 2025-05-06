@@ -1,4 +1,5 @@
-let currentSpeedKmH = 0;
+// ✅ script.js
+let allSpeedSamples = [];
 let lastStepTime = Date.now();
 let currentLatitude = null;
 let currentLongitude = null;
@@ -11,8 +12,9 @@ const STEP_THRESHOLD = 2.5;
 const MAX_SPEED_KMH = 3;
 const MIN_VALID_SPEED = 0.1;
 
+// 권한 요청 버튼 클릭 시
+
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
-  // iOS 센서 권한
   if (typeof DeviceMotionEvent?.requestPermission === "function") {
     try {
       const motionPermission = await DeviceMotionEvent.requestPermission();
@@ -26,7 +28,6 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
     }
   }
 
-  // 위치 권한 요청 (초기 1회)
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -34,7 +35,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
         currentLongitude = pos.coords.longitude;
         document.getElementById("lat").textContent = currentLatitude.toFixed(6);
         document.getElementById("lon").textContent = currentLongitude.toFixed(6);
-        startTracking(); // 위치 확인 후 시작
+        startTracking();
       },
       (err) => {
         alert("위치 권한이 필요합니다.");
@@ -52,7 +53,6 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
 function startTracking() {
   document.getElementById("requestPermissionButton").style.display = "none";
   document.getElementById("radarAnimation").style.display = "block";
-  document.getElementById("speedInfo").style.display = "block";
   document.getElementById("gpsInfo").style.display = "block";
 
   navigator.geolocation.watchPosition(
@@ -62,7 +62,7 @@ function startTracking() {
       document.getElementById("lat").textContent = currentLatitude.toFixed(6);
       document.getElementById("lon").textContent = currentLongitude.toFixed(6);
     },
-    (err) => console.warn("❌ 위치 추적 실패:", err.message),
+    (err) => console.warn("\u274c 위치 추적 실패:", err.message),
     {
       enableHighAccuracy: true,
       timeout: 10000,
@@ -84,13 +84,8 @@ function handleDeviceMotion(event) {
 
     let speed = avgStrideLength / stepTime;
     speed = Math.min(speed * 3.6, MAX_SPEED_KMH);
-    currentSpeedKmH = speed >= MIN_VALID_SPEED ? +speed.toFixed(2) : 0.0;
-    updateSpeedDisplay(currentSpeedKmH);
+    if (speed >= MIN_VALID_SPEED) allSpeedSamples.push(+speed.toFixed(2));
   }
-}
-
-function updateSpeedDisplay(speed) {
-  document.getElementById("speedInfo").innerHTML = `현재 속도: ${speed} km/h`;
 }
 
 function connectToServer() {
@@ -109,12 +104,15 @@ function connectToServer() {
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    if (!currentLatitude || !currentLongitude) return;
+    if (!currentLatitude || !currentLongitude || allSpeedSamples.length === 0) return;
+
+    const sum = allSpeedSamples.reduce((a, b) => a + b, 0);
+    const avg = +(sum / allSpeedSamples.length).toFixed(2);
 
     const payload = {
       type: "web_data",
       id: userId,
-      speed: currentSpeedKmH,
+      speed: avg,
       location: {
         latitude: currentLatitude,
         longitude: currentLongitude
@@ -122,10 +120,12 @@ function startUploadLoop() {
     };
 
     socket.send(JSON.stringify(payload));
+    document.getElementById("speedInfo").innerHTML = `평균 속도: ${avg} km/h`;
   }, 3000);
 }
 
 // 탭 전환
+
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
   document.getElementById("mypage").style.display = "none";
