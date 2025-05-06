@@ -50,7 +50,7 @@ function initConnection() {
 }
 
 function connectToServer() {
-  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/");
+  socket = new WebSocket("ws://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/");
 
   socket.onopen = () => {
     socketConnected = true;
