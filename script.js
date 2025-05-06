@@ -11,6 +11,11 @@ const STEP_THRESHOLD = 2.5;
 const MAX_SPEED_KMH = 3;
 const MIN_VALID_SPEED = 0.1;
 
+// 이전에 보낸 값 저장
+let lastSentAverage = 0;
+let lastSentLat = null;
+let lastSentLon = null;
+
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   if (typeof DeviceMotionEvent?.requestPermission === "function") {
     try {
@@ -105,20 +110,28 @@ function startUploadLoop() {
 
     const sum = allSpeedSamples.reduce((a, b) => a + b, 0);
     const avg = +(sum / allSpeedSamples.length).toFixed(2);
+    const lat = +currentLatitude.toFixed(6);
+    const lon = +currentLongitude.toFixed(6);
 
-    const payload = {
-      type: "web_data",
-      id: userId,
-      speed: avg,
-      location: {
-        latitude: currentLatitude,
-        longitude: currentLongitude
-      }
-    };
+    const hasChanged =
+      avg !== lastSentAverage || lat !== lastSentLat || lon !== lastSentLon;
 
-    socket.send(JSON.stringify(payload));
-    document.getElementById("speedInfo").innerHTML =
-      `평균 속도: ${avg} km/h<br>위도: ${currentLatitude.toFixed(6)}<br>경도: ${currentLongitude.toFixed(6)}`;
+    if (hasChanged) {
+      document.getElementById("speedInfo").innerHTML =
+        `평균 속도: ${avg} km/h<br>위도: ${lat}<br>경도: ${lon}`;
+
+      const payload = {
+        type: "web_data",
+        id: userId,
+        speed: avg,
+        location: { latitude: lat, longitude: lon }
+      };
+      socket.send(JSON.stringify(payload));
+
+      lastSentAverage = avg;
+      lastSentLat = lat;
+      lastSentLon = lon;
+    }
   }, 3000);
 }
 
