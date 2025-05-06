@@ -6,9 +6,10 @@ let socket = null;
 
 const userId = "20250001";
 const avgStrideLength = 0.7;
-const STEP_INTERVAL = 400;
-const STEP_THRESHOLD = 1.2; // 낮은 민감도
-const MAX_SPEED_KMH = 10;   // 최대 속도 제한
+const STEP_INTERVAL = 500;
+const STEP_THRESHOLD = 2.0;
+const MAX_SPEED_KMH = 5;
+const MIN_VALID_SPEED = 0.1;
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   if (navigator.geolocation) {
@@ -68,7 +69,8 @@ function handleDeviceMotion(event) {
     const stepTime = (now - lastStepTime) / 1000;
     lastStepTime = now;
     let speed = avgStrideLength / stepTime;
-    currentSpeedKmH = +(Math.min(speed * 3.6, MAX_SPEED_KMH).toFixed(2));
+    speed = Math.min(speed * 3.6, MAX_SPEED_KMH);
+    currentSpeedKmH = speed >= MIN_VALID_SPEED ? +speed.toFixed(2) : 0.0;
     updateSpeedDisplay(currentSpeedKmH);
   }
 }
@@ -78,12 +80,11 @@ function updateSpeedDisplay(speed) {
 }
 
 function connectToServer() {
-  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
+  socket = new WebSocket("wss://YOUR_REPLIT_SERVER_URL_HERE");
 
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId }));
     startUploadLoop();
-
     document.getElementById("radarAnimation").style.display = "none";
     document.getElementById("trafficLightIllustration").style.display = "block";
   };
@@ -110,7 +111,7 @@ function startUploadLoop() {
   }, 3000);
 }
 
-// 하단 탭 전환
+// 탭 전환
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
   document.getElementById("mypage").style.display = "none";
