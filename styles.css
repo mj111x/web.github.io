@@ -29,21 +29,6 @@ body {
   border-radius: 5px;
 }
 
-button {
-  margin-top: 20px;
-  padding: 10px 20px;
-  background-color: #4CAF50;
-  color: white;
-  font-size: 16px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-button:hover {
-  background-color: #45a049;
-}
-
 .radar-container {
   position: relative;
   width: 150px;

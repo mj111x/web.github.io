@@ -3,45 +3,68 @@ let lastStepTime = Date.now();
 let currentLatitude = null;
 let currentLongitude = null;
 let socket = null;
+
 const userId = "20250001";
 const avgStrideLength = 0.7;
 const STEP_INTERVAL = 300;
-const STEP_THRESHOLD = 1.0;
+const STEP_THRESHOLD = 0.5;
 
-// 권한 요청 + 트래킹 시작
-document.getElementById("requestPermissionButton").addEventListener("click", async () => {
-  try {
-    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+window.addEventListener("load", async () => {
+  console.log("🔄 페이지 로드됨 → 권한 요청 시도");
+
+  // 위치 권한
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        currentLatitude = pos.coords.latitude;
+        currentLongitude = pos.coords.longitude;
+        console.log("📍 초기 위치:", currentLatitude, currentLongitude);
+        document.getElementById("lat").textContent = currentLatitude.toFixed(6);
+        document.getElementById("lon").textContent = currentLongitude.toFixed(6);
+      },
+      (err) => console.warn("❌ 위치 권한 거부:", err.message)
+    );
+  }
+
+  // 센서 권한
+  if (typeof DeviceMotionEvent?.requestPermission === "function") {
+    try {
       const result = await DeviceMotionEvent.requestPermission();
-      if (result !== 'granted') {
-        alert("❌ 센서 권한 거부됨");
-        return;
+      if (result === "granted") {
+        console.log("✅ 센서 권한 허용됨");
+        startTracking();
+      } else {
+        alert("❌ 센서 권한이 거부되었습니다.");
       }
+    } catch (err) {
+      alert("🚨 센서 권한 요청 중 오류 발생");
+      console.error(err);
     }
-
-    startTracking(); // 센서 + GPS + 서버 연결 시작
-  } catch (err) {
-    alert("❗ 권한 요청 오류");
-    console.error(err);
+  } else {
+    console.log("📱 센서 권한 불필요한 환경");
+    startTracking(); // Android, 데스크탑 등
   }
 });
 
 function startTracking() {
   console.log("📡 트래킹 시작됨");
-  document.getElementById("requestPermissionButton").style.display = "none";
+  document.getElementById("speedInfo").style.display = "block";
+  document.getElementById("gpsInfo").style.display = "block";
+  document.getElementById("radarAnimation").style.display = "block";
 
   // 위치 추적
   navigator.geolocation.watchPosition(
     (pos) => {
       currentLatitude = pos.coords.latitude;
       currentLongitude = pos.coords.longitude;
-      console.log("📍 위치 갱신:", currentLatitude, currentLongitude);
+      document.getElementById("lat").textContent = currentLatitude.toFixed(6);
+      document.getElementById("lon").textContent = currentLongitude.toFixed(6);
     },
-    (err) => console.error("❌ 위치 추적 실패:", err),
+    (err) => console.warn("❌ 위치 추적 실패:", err.message),
     { enableHighAccuracy: true, maximumAge: 1000, timeout: 5000 }
   );
 
-  // 센서 리스너
+  // 센서 이벤트
   window.addEventListener("devicemotion", handleDeviceMotion, true);
   console.log("📡 devicemotion 이벤트 등록됨");
 
@@ -50,21 +73,15 @@ function startTracking() {
 
 function handleDeviceMotion(event) {
   const accY = event.acceleration.y || 0;
-  const accX = event.acceleration.x || 0;
-  const accZ = event.acceleration.z || 0;
   const now = Date.now();
 
-  if (
-    Math.abs(accY) > STEP_THRESHOLD &&
-    now - lastStepTime > STEP_INTERVAL
-  ) {
+  if (Math.abs(accY) > STEP_THRESHOLD && now - lastStepTime > STEP_INTERVAL) {
     const stepTime = (now - lastStepTime) / 1000;
     lastStepTime = now;
-
     const speed = avgStrideLength / stepTime;
     currentSpeedKmH = +(speed * 3.6).toFixed(2);
-    console.log("🚶‍♀️ 속도 측정:", currentSpeedKmH, "km/h");
     updateSpeedDisplay(currentSpeedKmH);
+    console.log("🚶‍♂️ 속도 측정:", currentSpeedKmH, "km/h");
   }
 }
 
@@ -73,7 +90,7 @@ function updateSpeedDisplay(speed) {
 }
 
 function connectToServer() {
-  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
+  socket = new WebSocket("wss://YOUR_REPLIT_SERVER_URL_HERE");
 
   socket.onopen = () => {
     console.log("✅ WebSocket 연결됨");
@@ -81,24 +98,19 @@ function connectToServer() {
     startUploadLoop();
   };
 
-  socket.onmessage = (event) => {
-    console.log("📨 서버 메시지:", event.data);
-  };
-
-  socket.onerror = (e) => {
-    console.error("❌ WebSocket 오류:", e);
-  };
+  socket.onmessage = (e) => console.log("📨 서버 메시지:", e.data);
+  socket.onerror = (e) => console.error("❌ WebSocket 오류:", e);
 }
 
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-      console.warn("🔌 WebSocket 연결 안됨");
+      console.warn("🛑 WebSocket 연결 아님");
       return;
     }
 
     if (!currentLatitude || !currentLongitude) {
-      console.warn("📍 위치 정보 없음");
+      console.warn("📍 위치 없음 → 전송 생략");
       return;
     }
 
