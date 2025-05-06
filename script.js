@@ -90,8 +90,7 @@ function updateSpeedDisplay(speed) {
   document.getElementById("speedInfo").innerHTML = `현재 속도: ${speed} km/h`;
 }
 
-function connectToServer() {
-  socket = new WebSocket("wss://YOUR_REPLIT_SERVER_URL_HERE");
+function connectToServer() {c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
 
   socket.onopen = () => {
     console.log("✅ WebSocket 연결됨");
