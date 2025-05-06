@@ -1,4 +1,3 @@
-// ✅ script.js
 let allSpeedSamples = [];
 let lastStepTime = Date.now();
 let currentLatitude = null;
@@ -11,8 +10,6 @@ const STEP_INTERVAL = 800;
 const STEP_THRESHOLD = 2.5;
 const MAX_SPEED_KMH = 3;
 const MIN_VALID_SPEED = 0.1;
-
-// 권한 요청 버튼 클릭 시
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   if (typeof DeviceMotionEvent?.requestPermission === "function") {
@@ -62,7 +59,7 @@ function startTracking() {
       document.getElementById("lat").textContent = currentLatitude.toFixed(6);
       document.getElementById("lon").textContent = currentLongitude.toFixed(6);
     },
-    (err) => console.warn("\u274c 위치 추적 실패:", err.message),
+    (err) => console.warn("❌ 위치 추적 실패:", err.message),
     {
       enableHighAccuracy: true,
       timeout: 10000,
@@ -89,7 +86,7 @@ function handleDeviceMotion(event) {
 }
 
 function connectToServer() {
-  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
+  socket = new WebSocket("wss://YOUR_REPLIT_SERVER_URL_HERE");
 
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId }));
@@ -120,11 +117,10 @@ function startUploadLoop() {
     };
 
     socket.send(JSON.stringify(payload));
-    document.getElementById("speedInfo").innerHTML = `평균 속도: ${avg} km/h`;
+    document.getElementById("speedInfo").innerHTML =
+      `평균 속도: ${avg} km/h<br>위도: ${currentLatitude.toFixed(6)}<br>경도: ${currentLongitude.toFixed(6)}`;
   }, 3000);
 }
-
-// 탭 전환
 
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
