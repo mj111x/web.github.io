@@ -12,7 +12,6 @@ const userId = "20250001";
 
 let sendInterval = null;
 let gpsInterval = null;
-let startedWalking = false;
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   try {
@@ -50,7 +49,7 @@ function initConnection() {
 }
 
 function connectToServer() {
-  socket = new WebSocket("ws://localhost:8000"); // 🔥 포트 8000 사용
+  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev");
 
   socket.onopen = () => {
     socketConnected = true;
