@@ -115,8 +115,8 @@ function startUploadLoop() {
 
     // 웹 UI에 항상 표시
     document.getElementById("speedInfo").innerHTML =
-  `평균 속도: ${avg} km/h | 위치: ${lat}, ${lon}`;
-  
+      `평균 속도: ${avg} km/h<br>위도: ${lat}<br>경도: ${lon}`;
+
     // 서버로는 값이 바뀌었을 때만 전송
     const hasChanged = avg !== lastSentAverage || lat !== lastSentLat || lon !== lastSentLon;
 
