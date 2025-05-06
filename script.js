@@ -4,6 +4,7 @@ let lastStepTime = Date.now();
 let lastMovementTime = Date.now();
 let currentLatitude = null;
 let currentLongitude = null;
+
 const avgStrideLength = 0.7;
 const STEP_THRESHOLD = 1.5;
 const STEP_INTERVAL = 500;
@@ -42,14 +43,25 @@ function startTracking() {
   console.log("📌 측정 시작!");
   document.getElementById("requestPermissionButton").style.display = "none";
   document.getElementById("speedInfo").style.display = "block";
+  document.getElementById("gpsInfo").style.display = "block";
   document.getElementById("radarAnimation").style.display = "block";
 
   window.addEventListener("devicemotion", handleDeviceMotion, true);
-  navigator.geolocation.watchPosition(position => {
-    currentLatitude = position.coords.latitude;
-    currentLongitude = position.coords.longitude;
-  });
 
+  // 실시간 GPS 표시
+  setInterval(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(position => {
+        currentLatitude = position.coords.latitude;
+        currentLongitude = position.coords.longitude;
+
+        document.getElementById("lat").textContent = currentLatitude.toFixed(6);
+        document.getElementById("lon").textContent = currentLongitude.toFixed(6);
+      });
+    }
+  }, 3000);
+
+  // 중앙 서버 연결 시도
   connectionInterval = setInterval(tryConnectToServer, 3000);
 }
 
@@ -84,7 +96,7 @@ function handleDeviceMotion(event) {
 
 function updateSpeedDisplay(speed) {
   const speedInfo = document.getElementById("speedInfo");
-  speedInfo.innerHTML = '<strong>현재 속도:</strong> ${speed} km/h';
+  speedInfo.innerHTML = `<strong>현재 속도:</strong> ${speed} km/h`;
 }
 
 function tryConnectToServer() {
@@ -132,5 +144,5 @@ function startSpeedUploadLoop() {
         }
       }));
     }
-  }, 5000); // 5초마다
+  }, 5000);
 }
