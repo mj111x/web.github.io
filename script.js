@@ -123,6 +123,25 @@ function tryConnectToServer() {
 }
 
 function startSpeedUploadLoop() {
+  currentLatitude = 37.56;
+currentLongitude = 126.97;
+
+setInterval(() => {
+  if (window.mySocket && window.mySocket.readyState === WebSocket.OPEN) {
+    const payload = {
+      type: "web_data",
+      id: "20250001",
+      speed: Math.random() * 5,
+      location: {
+        latitude: currentLatitude,
+        longitude: currentLongitude
+      }
+    };
+    console.log("📤 테스트 전송:", payload);
+    window.mySocket.send(JSON.stringify(payload));
+  }
+}, 3000);
+
   setInterval(() => {
     if (
       currentLatitude === null || currentLongitude === null ||
