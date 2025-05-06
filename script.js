@@ -84,7 +84,7 @@ function handleDeviceMotion(event) {
 
 function updateSpeedDisplay(speed) {
   const speedInfo = document.getElementById("speedInfo");
-  speedInfo.innerHTML = <strong>현재 속도:</strong> ${speed} km/h;
+  speedInfo.innerHTML = '<strong>현재 속도:</strong> ${speed} km/h';
 }
 
 function tryConnectToServer() {
