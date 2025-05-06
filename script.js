@@ -5,11 +5,11 @@ let currentLongitude = null;
 let socket = null;
 
 const userId = "20250001";
-const avgStrideLength = 0.45;       // 보폭 짧게 설정 (정확도 향상)
-const STEP_INTERVAL = 800;          // 0.8초 이상 간격일 때만 유효
-const STEP_THRESHOLD = 2.5;         // 가속도 임계값 더 강화
-const MAX_SPEED_KMH = 3;            // 걷기 한정 최대 속도
-const MIN_VALID_SPEED = 0.1;        // 너무 낮은 값은 노이즈로 간주
+const avgStrideLength = 0.45;
+const STEP_INTERVAL = 800;
+const STEP_THRESHOLD = 2.5;
+const MAX_SPEED_KMH = 3;
+const MIN_VALID_SPEED = 0.1;
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   if (navigator.geolocation) {
@@ -20,7 +20,12 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
         document.getElementById("lat").textContent = currentLatitude.toFixed(6);
         document.getElementById("lon").textContent = currentLongitude.toFixed(6);
       },
-      (err) => console.warn("❌ 위치 권한 거부:", err.message)
+      (err) => console.warn("❌ 위치 권한 거부:", err.message),
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
     );
   }
 
@@ -54,7 +59,11 @@ function startTracking() {
       document.getElementById("lon").textContent = currentLongitude.toFixed(6);
     },
     (err) => console.warn("❌ 위치 추적 실패:", err.message),
-    { enableHighAccuracy: true }
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    }
   );
 
   window.addEventListener("devicemotion", handleDeviceMotion, true);
@@ -70,8 +79,7 @@ function handleDeviceMotion(event) {
     lastStepTime = now;
 
     let speed = avgStrideLength / stepTime;
-    speed = Math.min(speed * 3.6, MAX_SPEED_KMH);  // m/s → km/h
-
+    speed = Math.min(speed * 3.6, MAX_SPEED_KMH);
     currentSpeedKmH = speed >= MIN_VALID_SPEED ? +speed.toFixed(2) : 0.0;
     updateSpeedDisplay(currentSpeedKmH);
   }
@@ -82,12 +90,11 @@ function updateSpeedDisplay(speed) {
 }
 
 function connectToServer() {
-  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
+  socket = new WebSocket("wss://YOUR_REPLIT_SERVER_URL_HERE");
 
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId }));
     startUploadLoop();
-
     document.getElementById("radarAnimation").style.display = "none";
     document.getElementById("trafficLightIllustration").style.display = "block";
   };
