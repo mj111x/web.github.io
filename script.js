@@ -5,13 +5,12 @@ let lastMovementTime = Date.now();
 let currentLatitude = null;
 let currentLongitude = null;
 
-const avgStrideLength = 0.7; // 평균 보폭 (m)
+const avgStrideLength = 0.7;
 const STEP_THRESHOLD = 1.5;
 const STEP_INTERVAL = 500;
 const userId = "20250001";
 let startedWalking = false;
 
-// 버튼 클릭 시 권한 요청 및 트래킹 시작
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   try {
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -24,7 +23,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
 
     startTracking();
   } catch (err) {
-    alert("🚨 권한 요청 중 오류 발생");
+    alert("🚨 권한 요청 오류");
     console.error(err);
   }
 });
@@ -37,19 +36,14 @@ function startTracking() {
   document.getElementById("gpsInfo").style.display = "block";
   document.getElementById("radarAnimation").style.display = "block";
 
-  // 실시간 위치 추적 시작
   startLocationTracking();
-
-  // 걸음 감지 이벤트
   window.addEventListener("devicemotion", handleDeviceMotion, true);
-
-  // WebSocket 서버 연결 시도
   tryConnectToServer();
 }
 
 function startLocationTracking() {
   if (!navigator.geolocation) {
-    alert("❌ 이 브라우저는 위치 정보를 지원하지 않습니다.");
+    alert("❌ 위치 정보 미지원");
     return;
   }
 
@@ -58,13 +52,12 @@ function startLocationTracking() {
       currentLatitude = position.coords.latitude;
       currentLongitude = position.coords.longitude;
 
-      console.log("📍 위치 갱신:", currentLatitude, currentLongitude);
-
+      console.log("📍 위치:", currentLatitude, currentLongitude);
       document.getElementById("lat").textContent = currentLatitude.toFixed(6);
       document.getElementById("lon").textContent = currentLongitude.toFixed(6);
     },
     (error) => {
-      console.warn("🚫 위치 가져오기 실패:", error.message);
+      console.warn("🚫 위치 실패:", error.message);
     },
     {
       enableHighAccuracy: true,
@@ -108,11 +101,16 @@ function tryConnectToServer() {
   const socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
 
   socket.onopen = () => {
-    console.log("✅ WebSocket 서버 연결됨");
+    console.log("✅ 서버 연결 완료");
     socketConnected = true;
     socket.send(JSON.stringify({ type: "register", id: userId }));
     window.mySocket = socket;
-    startSpeedUploadLoop(); // 연결 후 전송 루프 시작
+
+    // 연결 성공 시 UI 전환
+    document.getElementById("radarAnimation").style.display = "none";
+    document.getElementById("trafficLightIllustration").style.display = "block";
+
+    startSpeedUploadLoop(); // 주기적 전송 시작
   };
 
   socket.onerror = (err) => {
@@ -130,7 +128,7 @@ function startSpeedUploadLoop() {
       currentLatitude === null || currentLongitude === null ||
       isNaN(currentLatitude) || isNaN(currentLongitude)
     ) {
-      console.warn("📍 위치 정보가 유효하지 않아 전송 생략");
+      console.warn("📍 유효한 위치 없음, 전송 생략");
       return;
     }
 
@@ -148,9 +146,9 @@ function startSpeedUploadLoop() {
 
     if (window.mySocket && window.mySocket.readyState === WebSocket.OPEN) {
       window.mySocket.send(JSON.stringify(payload));
-      console.log("✅ 서버로 데이터 전송 완료!");
+      console.log("✅ 전송 완료!");
     } else {
-      console.warn("⚠️ WebSocket 연결이 아직 안 됨");
+      console.warn("⚠️ WebSocket 연결 안 됨");
     }
   }, 3000); // 3초 주기
 }
