@@ -5,11 +5,11 @@ let currentLongitude = null;
 let socket = null;
 
 const userId = "20250001";
-const avgStrideLength = 0.7;
-const STEP_INTERVAL = 500;
-const STEP_THRESHOLD = 2.0;
-const MAX_SPEED_KMH = 5;
-const MIN_VALID_SPEED = 0.1;
+const avgStrideLength = 0.45;       // 보폭 짧게 설정 (정확도 향상)
+const STEP_INTERVAL = 800;          // 0.8초 이상 간격일 때만 유효
+const STEP_THRESHOLD = 2.5;         // 가속도 임계값 더 강화
+const MAX_SPEED_KMH = 3;            // 걷기 한정 최대 속도
+const MIN_VALID_SPEED = 0.1;        // 너무 낮은 값은 노이즈로 간주
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   if (navigator.geolocation) {
@@ -68,8 +68,10 @@ function handleDeviceMotion(event) {
   if (Math.abs(accY) > STEP_THRESHOLD && now - lastStepTime > STEP_INTERVAL) {
     const stepTime = (now - lastStepTime) / 1000;
     lastStepTime = now;
+
     let speed = avgStrideLength / stepTime;
-    speed = Math.min(speed * 3.6, MAX_SPEED_KMH);
+    speed = Math.min(speed * 3.6, MAX_SPEED_KMH);  // m/s → km/h
+
     currentSpeedKmH = speed >= MIN_VALID_SPEED ? +speed.toFixed(2) : 0.0;
     updateSpeedDisplay(currentSpeedKmH);
   }
@@ -85,6 +87,7 @@ function connectToServer() {
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId }));
     startUploadLoop();
+
     document.getElementById("radarAnimation").style.display = "none";
     document.getElementById("trafficLightIllustration").style.display = "block";
   };
