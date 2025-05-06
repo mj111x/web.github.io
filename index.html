@@ -2,28 +2,42 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Web 걷기 센서</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="homePage">
     <h1>WebSocket 연결 테스트</h1>
+
+    <button id="requestPermissionButton">센서 및 위치 권한 허용</button>
 
     <div class="radar-container" id="radarAnimation" style="display: none;">
       <div class="radar-wave"></div>
       <div class="radar-wave delay"></div>
     </div>
 
+    <div id="trafficLightIllustration" style="display: none; margin-top: 20px;">
+      <img src="traffic-light.png" alt="신호등 일러스트" width="80" />
+    </div>
+
     <div id="speedInfo" style="display: none;">현재 속도: 0.00 km/h</div>
     <div id="gpsInfo" style="display: none;">
       <strong>위치:</strong> <span id="lat">-</span>, <span id="lon">-</span>
     </div>
+  </div>
 
-    <div id="trafficLightIllustration" style="display: none; margin-top: 20px;">
-      <img src="traffic-light.png" alt="신호등 일러스트" width="80" />
+  <div class="container" id="mypage" style="display: none;">
+    <h1>My Page</h1>
+    <div id="mypageInfo">
+      <strong>이름:</strong> 홍길동
     </div>
   </div>
+
+  <nav class="navbar">
+    <button id="homeBtn">Home</button>
+    <button id="mypageBtn">MyPage</button>
+  </nav>
 
   <script src="script.js"></script>
 </body>
