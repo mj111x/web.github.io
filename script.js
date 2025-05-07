@@ -9,7 +9,7 @@ const avgStrideLength = 0.45;
 const STEP_INTERVAL = 800;
 const STEP_THRESHOLD = 2.5;
 const MAX_SPEED_KMH = 3;
-const MIN_VALID_SPEED = 0.1;
+const MIN_VALID_SPEED = 0.5;
 
 let lastSentAverage = 0;
 let lastSentLat = null;
@@ -85,7 +85,13 @@ function handleDeviceMotion(event) {
 
     let speed = avgStrideLength / stepTime;
     speed = Math.min(speed * 3.6, MAX_SPEED_KMH);
-    if (speed >= MIN_VALID_SPEED) allSpeedSamples.push(+speed.toFixed(2));
+
+    if (speed >= MIN_VALID_SPEED) {
+      allSpeedSamples.push(+speed.toFixed(2));
+    } else {
+      allSpeedSamples = [];
+      allSpeedSamples.push(0);
+    }
   }
 }
 
@@ -108,16 +114,19 @@ function startUploadLoop() {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     if (!currentLatitude || !currentLongitude || allSpeedSamples.length === 0) return;
 
-    const sum = allSpeedSamples.reduce((a, b) => a + b, 0);
-    const avg = +(sum / allSpeedSamples.length).toFixed(2);
+    const latestSpeed = allSpeedSamples[allSpeedSamples.length - 1];
+
+    const validSamples = allSpeedSamples.filter(v => v >= MIN_VALID_SPEED);
+    const avg = validSamples.length > 0
+      ? +(validSamples.reduce((a, b) => a + b, 0) / validSamples.length).toFixed(2)
+      : 0.0;
+
     const lat = +currentLatitude.toFixed(6);
     const lon = +currentLongitude.toFixed(6);
 
-    // 웹 UI에 항상 표시
     document.getElementById("speedInfo").innerHTML =
       `평균 속도: ${avg} km/h<br>위도: ${lat}<br>경도: ${lon}`;
 
-    // 서버로는 값이 바뀌었을 때만 전송
     const hasChanged = avg !== lastSentAverage || lat !== lastSentLat || lon !== lastSentLon;
 
     if (hasChanged) {
@@ -135,7 +144,6 @@ function startUploadLoop() {
   }, 3000);
 }
 
-// 탭 전환
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
   document.getElementById("mypage").style.display = "none";
