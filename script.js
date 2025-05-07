@@ -86,12 +86,7 @@ function handleDeviceMotion(event) {
     let speed = avgStrideLength / stepTime;
     speed = Math.min(speed * 3.6, MAX_SPEED_KMH);
 
-    if (speed >= MIN_VALID_SPEED) {
-      allSpeedSamples.push(+speed.toFixed(2));
-    } else {
-      allSpeedSamples = [];
-      allSpeedSamples.push(0);
-    }
+    allSpeedSamples.push(+speed.toFixed(2));
   }
 }
 
@@ -114,33 +109,35 @@ function startUploadLoop() {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     if (!currentLatitude || !currentLongitude || allSpeedSamples.length === 0) return;
 
-    const latestSpeed = allSpeedSamples[allSpeedSamples.length - 1];
-
-    const validSamples = allSpeedSamples.filter(v => v >= MIN_VALID_SPEED);
-    const avg = validSamples.length > 0
-      ? +(validSamples.reduce((a, b) => a + b, 0) / validSamples.length).toFixed(2)
-      : 0.0;
-
+    const sum = allSpeedSamples.reduce((a, b) => a + b, 0);
+    const avg = +(sum / allSpeedSamples.length).toFixed(2);
     const lat = +currentLatitude.toFixed(6);
     const lon = +currentLongitude.toFixed(6);
 
-    document.getElementById("speedInfo").innerHTML =
-      `평균 속도: ${avg} km/h<br>위도: ${lat}<br>경도: ${lon}`;
+    // 속도 0.5km/h 이하일 경우 0으로 간주
+    const finalAvg = avg < MIN_VALID_SPEED ? 0.0 : avg;
 
-    const hasChanged = avg !== lastSentAverage || lat !== lastSentLat || lon !== lastSentLon;
+    document.getElementById("speedInfo").innerHTML =
+      `평균 속도: ${finalAvg} km/h<br>위도: ${lat}<br>경도: ${lon}`;
+
+    const hasChanged = finalAvg !== lastSentAverage || lat !== lastSentLat || lon !== lastSentLon;
 
     if (hasChanged) {
       const payload = {
         type: "web_data",
         id: userId,
-        speed: avg,
+        speed: finalAvg,
         location: { latitude: lat, longitude: lon }
       };
       socket.send(JSON.stringify(payload));
-      lastSentAverage = avg;
+      lastSentAverage = finalAvg;
       lastSentLat = lat;
       lastSentLon = lon;
     }
+
+    // 속도 데이터 초기화
+    allSpeedSamples = [];
+
   }, 3000);
 }
 
