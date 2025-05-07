@@ -12,6 +12,7 @@ const STEP_THRESHOLD = 2.5;
 const MAX_SPEED_KMH = 3;
 const SPEED_CUTOFF = 0.5;
 
+let allSpeedSamples = [];
 let lastSentSpeed = 0;
 let lastSentLat = null;
 let lastSentLon = null;
@@ -115,9 +116,19 @@ function startUploadLoop() {
     const lat = +currentLatitude.toFixed(6);
     const lon = +currentLongitude.toFixed(6);
 
-    // 1초 이상 속도 갱신 안 됐거나 속도가 기준 이하일 경우
-    const isSpeedStale = now - lastSpeedUpdateTime > 1000;
-    const finalSpeed = isSpeedStale || lastSpeed < SPEED_CUTOFF ? 0.0 : lastSpeed;
+    let finalSpeed = 0.0;
+
+    // 1초 이상 측정 안 됨 또는 0.5km/h 미만 → 정지로 간주
+    const isStale = now - lastSpeedUpdateTime > 1000 || lastSpeed < SPEED_CUTOFF;
+
+    if (isStale) {
+      allSpeedSamples = []; // 중첩 제거
+      finalSpeed = 0.0;
+    } else {
+      allSpeedSamples.push(lastSpeed);
+      const sum = allSpeedSamples.reduce((a, b) => a + b, 0);
+      finalSpeed = +(sum / allSpeedSamples.length).toFixed(2);
+    }
 
     document.getElementById("speedInfo").innerHTML =
       `속도: ${finalSpeed} km/h<br>위도: ${lat}<br>경도: ${lon}`;
@@ -139,14 +150,13 @@ function startUploadLoop() {
       lastSentLat = lat;
       lastSentLon = lon;
     }
-  }, 1000);
+  }, 3000); // ✅ 3초 주기
 }
 
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
   document.getElementById("mypage").style.display = "none";
 });
-
 document.getElementById("mypageBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "none";
   document.getElementById("mypage").style.display = "block";
