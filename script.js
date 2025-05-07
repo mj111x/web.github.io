@@ -12,8 +12,7 @@ const STEP_THRESHOLD = 2.5;
 const MAX_SPEED_KMH = 3;
 const SPEED_CUTOFF = 0.5;
 
-let allSpeedSamples = [];
-let lastSentSpeed = 0;
+let lastSentSpeed = -1;
 let lastSentLat = null;
 let lastSentLon = null;
 
@@ -86,7 +85,7 @@ function handleDeviceMotion(event) {
     lastStepTime = now;
 
     let speed = avgStrideLength / stepTime;
-    speed = Math.min(speed * 3.6, MAX_SPEED_KMH); // m/s → km/h
+    speed = Math.min(speed * 3.6, MAX_SPEED_KMH);
 
     lastSpeed = +speed.toFixed(2);
     lastSpeedUpdateTime = now;
@@ -112,27 +111,19 @@ function startUploadLoop() {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     if (!currentLatitude || !currentLongitude) return;
 
-    const now = Date.now();
     const lat = +currentLatitude.toFixed(6);
     const lon = +currentLongitude.toFixed(6);
+    const now = Date.now();
 
-    let finalSpeed = 0.0;
+    // 핵심 로직: 최근 속도 < 0.5 km/h 이면 0으로 간주
+    const isStale = now - lastSpeedUpdateTime > 1000;
+    const finalSpeed = (isStale || lastSpeed < SPEED_CUTOFF) ? 0.0 : lastSpeed;
 
-    // 1초 이상 측정 안 됨 또는 0.5km/h 미만 → 정지로 간주
-    const isStale = now - lastSpeedUpdateTime > 1000 || lastSpeed < SPEED_CUTOFF;
-
-    if (isStale) {
-      allSpeedSamples = []; // 중첩 제거
-      finalSpeed = 0.0;
-    } else {
-      allSpeedSamples.push(lastSpeed);
-      const sum = allSpeedSamples.reduce((a, b) => a + b, 0);
-      finalSpeed = +(sum / allSpeedSamples.length).toFixed(2);
-    }
-
+    // UI 업데이트
     document.getElementById("speedInfo").innerHTML =
       `속도: ${finalSpeed} km/h<br>위도: ${lat}<br>경도: ${lon}`;
 
+    // 값이 변했을 경우만 전송
     const hasChanged =
       finalSpeed !== lastSentSpeed ||
       lat !== lastSentLat ||
@@ -150,13 +141,14 @@ function startUploadLoop() {
       lastSentLat = lat;
       lastSentLon = lon;
     }
-  }, 3000); // ✅ 3초 주기
+  }, 3000); // ✅ 3초마다 실행
 }
 
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
   document.getElementById("mypage").style.display = "none";
 });
+
 document.getElementById("mypageBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "none";
   document.getElementById("mypage").style.display = "block";
