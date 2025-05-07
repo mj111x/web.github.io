@@ -1,4 +1,6 @@
 let lastStepTime = Date.now();
+let lastSpeed = 0;
+let lastSpeedUpdateTime = 0;
 let currentLatitude = null;
 let currentLongitude = null;
 let socket = null;
@@ -8,9 +10,8 @@ const avgStrideLength = 0.45;
 const STEP_INTERVAL = 800;
 const STEP_THRESHOLD = 2.5;
 const MAX_SPEED_KMH = 3;
-const SPEED_CUTOFF = 0.5; // 단일 속도 기준
+const SPEED_CUTOFF = 0.5;
 
-let lastSpeed = 0;
 let lastSentSpeed = 0;
 let lastSentLat = null;
 let lastSentLon = null;
@@ -85,7 +86,9 @@ function handleDeviceMotion(event) {
 
     let speed = avgStrideLength / stepTime;
     speed = Math.min(speed * 3.6, MAX_SPEED_KMH); // m/s → km/h
+
     lastSpeed = +speed.toFixed(2);
+    lastSpeedUpdateTime = now;
   }
 }
 
@@ -108,17 +111,21 @@ function startUploadLoop() {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     if (!currentLatitude || !currentLongitude) return;
 
+    const now = Date.now();
     const lat = +currentLatitude.toFixed(6);
     const lon = +currentLongitude.toFixed(6);
 
-    // 속도 조건: 0.5km/h 이하이면 0으로 간주
-    const finalSpeed = lastSpeed < SPEED_CUTOFF ? 0.0 : lastSpeed;
+    // 1초 이상 속도 갱신 안 됐거나 속도가 기준 이하일 경우
+    const isSpeedStale = now - lastSpeedUpdateTime > 1000;
+    const finalSpeed = isSpeedStale || lastSpeed < SPEED_CUTOFF ? 0.0 : lastSpeed;
 
     document.getElementById("speedInfo").innerHTML =
       `속도: ${finalSpeed} km/h<br>위도: ${lat}<br>경도: ${lon}`;
 
     const hasChanged =
-      finalSpeed !== lastSentSpeed || lat !== lastSentLat || lon !== lastSentLon;
+      finalSpeed !== lastSentSpeed ||
+      lat !== lastSentLat ||
+      lon !== lastSentLon;
 
     if (hasChanged) {
       const payload = {
@@ -132,13 +139,14 @@ function startUploadLoop() {
       lastSentLat = lat;
       lastSentLon = lon;
     }
-  }, 1000); // 1초마다 체크
+  }, 1000);
 }
 
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
   document.getElementById("mypage").style.display = "none";
 });
+
 document.getElementById("mypageBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "none";
   document.getElementById("mypage").style.display = "block";
