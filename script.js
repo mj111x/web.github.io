@@ -1,4 +1,3 @@
-let allSpeedSamples = [];
 let lastStepTime = Date.now();
 let currentLatitude = null;
 let currentLongitude = null;
@@ -9,9 +8,10 @@ const avgStrideLength = 0.45;
 const STEP_INTERVAL = 800;
 const STEP_THRESHOLD = 2.5;
 const MAX_SPEED_KMH = 3;
-const MIN_VALID_SPEED = 0.5;
+const SPEED_CUTOFF = 0.5; // 단일 속도 기준
 
-let lastSentAverage = 0;
+let lastSpeed = 0;
+let lastSentSpeed = 0;
 let lastSentLat = null;
 let lastSentLon = null;
 
@@ -84,9 +84,8 @@ function handleDeviceMotion(event) {
     lastStepTime = now;
 
     let speed = avgStrideLength / stepTime;
-    speed = Math.min(speed * 3.6, MAX_SPEED_KMH);
-
-    allSpeedSamples.push(+speed.toFixed(2));
+    speed = Math.min(speed * 3.6, MAX_SPEED_KMH); // m/s → km/h
+    lastSpeed = +speed.toFixed(2);
   }
 }
 
@@ -107,38 +106,33 @@ function connectToServer() {
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    if (!currentLatitude || !currentLongitude || allSpeedSamples.length === 0) return;
+    if (!currentLatitude || !currentLongitude) return;
 
-    const sum = allSpeedSamples.reduce((a, b) => a + b, 0);
-    const avg = +(sum / allSpeedSamples.length).toFixed(2);
     const lat = +currentLatitude.toFixed(6);
     const lon = +currentLongitude.toFixed(6);
 
-    // 속도 0.5km/h 이하일 경우 0으로 간주
-    const finalAvg = avg < MIN_VALID_SPEED ? 0.0 : avg;
+    // 속도 조건: 0.5km/h 이하이면 0으로 간주
+    const finalSpeed = lastSpeed < SPEED_CUTOFF ? 0.0 : lastSpeed;
 
     document.getElementById("speedInfo").innerHTML =
-      `평균 속도: ${finalAvg} km/h<br>위도: ${lat}<br>경도: ${lon}`;
+      `속도: ${finalSpeed} km/h<br>위도: ${lat}<br>경도: ${lon}`;
 
-    const hasChanged = finalAvg !== lastSentAverage || lat !== lastSentLat || lon !== lastSentLon;
+    const hasChanged =
+      finalSpeed !== lastSentSpeed || lat !== lastSentLat || lon !== lastSentLon;
 
     if (hasChanged) {
       const payload = {
         type: "web_data",
         id: userId,
-        speed: finalAvg,
+        speed: finalSpeed,
         location: { latitude: lat, longitude: lon }
       };
       socket.send(JSON.stringify(payload));
-      lastSentAverage = finalAvg;
+      lastSentSpeed = finalSpeed;
       lastSentLat = lat;
       lastSentLon = lon;
     }
-
-    // 속도 데이터 초기화
-    allSpeedSamples = [];
-
-  }, 3000);
+  }, 1000); // 1초마다 체크
 }
 
 document.getElementById("homeBtn").addEventListener("click", () => {
