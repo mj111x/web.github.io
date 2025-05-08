@@ -1,17 +1,17 @@
 let lastStepTime = Date.now();
 let lastSpeed = 0;
 let lastSpeedUpdateTime = 0;
-let speedSamples = []; // ✅ 유효 속도 누적용
+let speedSamples = [];
 let currentLatitude = null;
 let currentLongitude = null;
 let socket = null;
 
 const userId = "20250001";
-const avgStrideLength = 0.45; // 보폭 (m)
-const STEP_INTERVAL = 800; // 최소 걸음 간격 (ms)
-const STEP_THRESHOLD = 2.5; // Y축 가속도 임계값
-const MAX_SPEED_KMH = 3; // 최대 시속
-const SPEED_CUTOFF = 0.5; // 0.5km/h 이하 무시
+const avgStrideLength = 0.45;
+const STEP_INTERVAL = 800;
+const STEP_THRESHOLD = 2.5;
+const MAX_SPEED_KMH = 3;
+const SPEED_CUTOFF = 0.5;
 
 let lastSentSpeed = -1;
 let lastSentLat = null;
@@ -44,11 +44,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
         alert("위치 권한이 필요합니다.");
         console.warn("위치 권한 거부:", err.message);
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
-      }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   }
 });
@@ -66,11 +62,7 @@ function startTracking() {
       document.getElementById("lon").textContent = currentLongitude.toFixed(6);
     },
     (err) => console.warn("❌ 위치 추적 실패:", err.message),
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
-    }
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 
   window.addEventListener("devicemotion", handleDeviceMotion, true);
@@ -86,19 +78,19 @@ function handleDeviceMotion(event) {
     lastStepTime = now;
 
     let speed = avgStrideLength / stepTime;
-    speed = Math.min(speed * 3.6, MAX_SPEED_KMH); // m/s → km/h
+    speed = Math.min(speed * 3.6, MAX_SPEED_KMH);
 
     lastSpeed = +speed.toFixed(2);
     lastSpeedUpdateTime = now;
 
     if (lastSpeed >= SPEED_CUTOFF) {
-      speedSamples.push(lastSpeed); // ✅ 유효 속도만 누적
+      speedSamples.push(lastSpeed);
     }
   }
 }
 
 function connectToServer() {
-  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
+  socket = new WebSocket("wss://YOUR_SERVER_URL:3000/");
 
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId }));
@@ -123,18 +115,15 @@ function startUploadLoop() {
     const isStale = now - lastSpeedUpdateTime > 1000;
     const finalSpeed = (isStale || lastSpeed < SPEED_CUTOFF) ? 0.0 : lastSpeed;
 
-    const avgSpeed =
-      speedSamples.length > 0
-        ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
-        : 0.0;
+    const avgSpeed = speedSamples.length > 0
+      ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
+      : 0.0;
 
     document.getElementById("speedInfo").innerHTML =
       `속도: ${finalSpeed} km/h<br>누적 평균: ${avgSpeed} km/h<br>위도: ${lat}<br>경도: ${lon}`;
 
     const hasChanged =
-      finalSpeed !== lastSentSpeed ||
-      lat !== lastSentLat ||
-      lon !== lastSentLon;
+      finalSpeed !== lastSentSpeed || lat !== lastSentLat || lon !== lastSentLon;
 
     if (hasChanged) {
       const payload = {
@@ -149,7 +138,7 @@ function startUploadLoop() {
       lastSentLat = lat;
       lastSentLon = lon;
     }
-  }, 3000); // 3초 주기
+  }, 3000);
 }
 
 document.getElementById("homeBtn").addEventListener("click", () => {
