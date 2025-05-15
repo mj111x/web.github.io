@@ -1,4 +1,3 @@
-// ✅ script.js - 걷기 센서 JS (횡단 가능 여부 + 잔여 시간 실시간 표시)
 let lastStepTime = Date.now();
 let lastSpeed = 0;
 let lastSpeedUpdateTime = 0;
