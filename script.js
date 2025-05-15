@@ -1,3 +1,4 @@
+// ✅ script.js - 걷기 센서 JS (횡단 가능 여부 + 잔여 시간 실시간 표시)
 let lastStepTime = Date.now();
 let lastSpeed = 0;
 let lastSpeedUpdateTime = 0;
@@ -16,6 +17,38 @@ const SPEED_CUTOFF = 0.5;
 let lastSentSpeed = -1;
 let lastSentLat = null;
 let lastSentLon = null;
+
+// DOM 요소 준비
+const resultDiv = document.createElement("div");
+resultDiv.id = "crossingResult";
+resultDiv.style.marginTop = "12px";
+resultDiv.style.fontSize = "18px";
+resultDiv.style.fontWeight = "bold";
+document.getElementById("homePage").appendChild(resultDiv);
+
+const countdownDiv = document.createElement("div");
+countdownDiv.id = "signalCountdown";
+countdownDiv.style.marginTop = "8px";
+countdownDiv.style.fontSize = "16px";
+document.getElementById("homePage").appendChild(countdownDiv);
+
+let remainingTime = null;
+let countdownTimer = null;
+
+function startCountdown(seconds, state) {
+  clearInterval(countdownTimer);
+  remainingTime = seconds;
+  countdownDiv.textContent = `⏱ 신호 상태: ${state} | 잔여 시간: ${remainingTime.toFixed(1)}초`;
+  countdownTimer = setInterval(() => {
+    remainingTime -= 1;
+    if (remainingTime <= 0) {
+      clearInterval(countdownTimer);
+      countdownDiv.textContent = `🔄 신호 상태 갱신 대기 중...`;
+    } else {
+      countdownDiv.textContent = `⏱ 신호 상태: ${state} | 잔여 시간: ${remainingTime.toFixed(1)}초`;
+    }
+  }, 1000);
+}
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   if (typeof DeviceMotionEvent?.requestPermission === "function") {
@@ -104,10 +137,10 @@ function connectToServer() {
     try {
       const data = JSON.parse(event.data);
       if (data.type === "crossing_result" && data.webUserId === userId) {
-        const resultDiv = document.getElementById("crossingResult");
-        if (resultDiv) {
-          resultDiv.textContent = `🚦 횡단 판단 결과: ${data.result}`;
-          resultDiv.style.color = data.result.includes("가능") ? "green" : "red";
+        resultDiv.textContent = `🚦 횡단 판단 결과: ${data.result}`;
+        resultDiv.style.color = data.result.includes("가능") ? "green" : "red";
+        if (typeof data.remainingGreenTime === "number") {
+          startCountdown(data.remainingGreenTime, data.signalState);
         }
       }
     } catch (e) {
