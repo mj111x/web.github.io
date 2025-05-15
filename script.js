@@ -16,6 +16,7 @@ const SPEED_CUTOFF = 0.5;
 let lastSentSpeed = -1;
 let lastSentLat = null;
 let lastSentLon = null;
+let isEvaluated = false; // 판단이 완료된 후 true로 설정
 
 // DOM 요소 준비
 const resultDiv = document.createElement("div");
@@ -138,6 +139,7 @@ function connectToServer() {
       if (data.type === "crossing_result" && data.webUserId === userId) {
         resultDiv.textContent = `🚦 횡단 판단 결과: ${data.result}`;
         resultDiv.style.color = data.result.includes("가능") ? "green" : "red";
+        isEvaluated = true; // 서버 판단 완료 → 더 이상 데이터 전송 안 함
         if (typeof data.remainingGreenTime === "number") {
           startCountdown(data.remainingGreenTime, data.signalState);
         }
@@ -152,6 +154,7 @@ function connectToServer() {
 
 function startUploadLoop() {
   setInterval(() => {
+    if (isEvaluated) return; // 판단 완료 시 데이터 전송 안함
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     if (!currentLatitude || !currentLongitude) return;
 
