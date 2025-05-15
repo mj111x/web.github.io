@@ -21,12 +21,17 @@ button {
   cursor: pointer;
 }
 
-#speedInfo, #gpsInfo, #mypageInfo {
+#speedInfo, #gpsInfo, #mypageInfo, #crossingResult {
   margin-top: 10px;
   font-size: 16px;
   background-color: #f0f0f0;
   padding: 12px;
   border-radius: 5px;
+}
+
+#crossingResult {
+  font-size: 18px;
+  font-weight: bold;
 }
 
 .radar-container {
