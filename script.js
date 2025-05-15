@@ -93,11 +93,26 @@ function connectToServer() {
   socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
 
   socket.onopen = () => {
-    socket.send(JSON.stringify({ type: "register", id: userId }));
+    socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
     document.getElementById("radarAnimation").style.display = "none";
     document.getElementById("trafficLightIllustration").style.display = "block";
     document.getElementById("speedInfo").style.display = "block";
+  };
+
+  socket.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === "crossing_result" && data.webUserId === userId) {
+        const resultDiv = document.getElementById("crossingResult");
+        if (resultDiv) {
+          resultDiv.textContent = `🚦 횡단 판단 결과: ${data.result}`;
+          resultDiv.style.color = data.result.includes("가능") ? "green" : "red";
+        }
+      }
+    } catch (e) {
+      console.warn("❌ 메시지 처리 오류:", e);
+    }
   };
 
   socket.onerror = (e) => console.error("WebSocket 오류:", e);
