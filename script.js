@@ -16,7 +16,7 @@ const SPEED_CUTOFF = 0.5;
 let lastSentSpeed = -1;
 let lastSentLat = null;
 let lastSentLon = null;
-let isEvaluated = false; // 판단이 완료된 후 true로 설정
+let isEvaluated = false;
 
 // DOM 요소 준비
 const resultDiv = document.createElement("div");
@@ -38,16 +38,33 @@ let countdownTimer = null;
 function startCountdown(seconds, state) {
   clearInterval(countdownTimer);
   remainingTime = seconds;
-  countdownDiv.textContent = `⏱ 신호 상태: ${state} | 잔여 시간: ${remainingTime.toFixed(1)}초`;
+
+  updateCountdownDisplay(state, remainingTime);
+
   countdownTimer = setInterval(() => {
     remainingTime -= 1;
+
     if (remainingTime <= 0) {
       clearInterval(countdownTimer);
       countdownDiv.textContent = `🔄 신호 상태 갱신 대기 중...`;
+      resultDiv.textContent = `🚦 횡단 판단 결과: ❌ 횡단 불가`;
+      resultDiv.style.color = "red";
     } else {
-      countdownDiv.textContent = `⏱ 신호 상태: ${state} | 잔여 시간: ${remainingTime.toFixed(1)}초`;
+      updateCountdownDisplay(state, remainingTime);
     }
   }, 1000);
+}
+
+function updateCountdownDisplay(state, time) {
+  countdownDiv.textContent = `⏱ 신호 상태: ${state} | 잔여 시간: ${time.toFixed(1)}초`;
+
+  if (state === "🟢 초록불") {
+    resultDiv.textContent = `🚦 횡단 판단 결과: ✅ 횡단 가능`;
+    resultDiv.style.color = "green";
+  } else {
+    resultDiv.textContent = `🚦 횡단 판단 결과: ❌ 횡단 불가`;
+    resultDiv.style.color = "red";
+  }
 }
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
@@ -137,12 +154,8 @@ function connectToServer() {
     try {
       const data = JSON.parse(event.data);
       if (data.type === "crossing_result" && data.webUserId === userId) {
-        resultDiv.textContent = `🚦 횡단 판단 결과: ${data.result}`;
-        resultDiv.style.color = data.result.includes("가능") ? "green" : "red";
-        isEvaluated = true; // 서버 판단 완료 → 더 이상 데이터 전송 안 함
-        if (typeof data.remainingGreenTime === "number") {
-          startCountdown(data.remainingGreenTime, data.signalState);
-        }
+        isEvaluated = true;
+        startCountdown(data.remainingGreenTime, data.signalState);
       }
     } catch (e) {
       console.warn("❌ 메시지 처리 오류:", e);
@@ -154,7 +167,7 @@ function connectToServer() {
 
 function startUploadLoop() {
   setInterval(() => {
-    if (isEvaluated) return; // 판단 완료 시 데이터 전송 안함
+    if (isEvaluated) return;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     if (!currentLatitude || !currentLongitude) return;
 
