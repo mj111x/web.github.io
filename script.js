@@ -18,7 +18,6 @@ let lastSentLat = null;
 let lastSentLon = null;
 let isEvaluated = false;
 
-// DOM 요소 준비
 const resultDiv = document.createElement("div");
 resultDiv.id = "crossingResult";
 resultDiv.style.marginTop = "12px";
@@ -32,29 +31,13 @@ countdownDiv.style.marginTop = "8px";
 countdownDiv.style.fontSize = "16px";
 document.getElementById("homePage").appendChild(countdownDiv);
 
-let remainingTime = null;
 let countdownTimer = null;
+let signalState = null;
+let signalRemainingTime = 0;
+let greenDuration = 30;
+let redDuration = 60;
 
-function startCountdown(seconds, state) {
-  clearInterval(countdownTimer);
-  remainingTime = seconds;
-
-  updateCountdownDisplay(state, remainingTime);
-
-  countdownTimer = setInterval(() => {
-    remainingTime -= 1;
-
-    if (remainingTime <= 0) {
-      clearInterval(countdownTimer);
-      countdownDiv.textContent = `🔄 신호 상태 갱신 대기 중...`;
-      resultDiv.textContent = `🚦 횡단 판단 결과: ❌ 횡단 불가`;
-      resultDiv.style.color = "red";
-    } else {
-      updateCountdownDisplay(state, remainingTime);
-    }
-  }, 1000);
-}
-
+// ✅ 실시간 상태 표시 및 판단 결과 갱신
 function updateCountdownDisplay(state, time) {
   countdownDiv.textContent = `⏱ 신호 상태: ${state} | 잔여 시간: ${time.toFixed(1)}초`;
 
@@ -65,6 +48,33 @@ function updateCountdownDisplay(state, time) {
     resultDiv.textContent = `🚦 횡단 판단 결과: ❌ 횡단 불가`;
     resultDiv.style.color = "red";
   }
+}
+
+// ✅ [방법 1] 클라이언트에서 반복 주기로 상태 계산
+function startSimulatedCountdown(initialState, initialRemainingTime, greenDur, redDur) {
+  clearInterval(countdownTimer);
+  signalState = initialState;
+  signalRemainingTime = initialRemainingTime;
+  greenDuration = greenDur;
+  redDuration = redDur;
+
+  updateCountdownDisplay(signalState, signalRemainingTime);
+
+  countdownTimer = setInterval(() => {
+    signalRemainingTime -= 1;
+
+    if (signalRemainingTime <= 0) {
+      if (signalState === "🟢 초록불") {
+        signalState = "🔴 빨간불";
+        signalRemainingTime = redDuration;
+      } else {
+        signalState = "🟢 초록불";
+        signalRemainingTime = greenDuration;
+      }
+    }
+
+    updateCountdownDisplay(signalState, signalRemainingTime);
+  }, 1000);
 }
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
@@ -153,9 +163,16 @@ function connectToServer() {
   socket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
+
+      // ✅ 방법 1: 서버에서 판단 결과만 받았을 때
       if (data.type === "crossing_result" && data.webUserId === userId) {
         isEvaluated = true;
-        startCountdown(data.remainingGreenTime, data.signalState);
+        startSimulatedCountdown(data.signalState, data.remainingGreenTime, 30, 60); // ← 실제 서버값 반영
+      }
+
+      // ✅ 방법 2: 서버가 실시간 신호 상태 전송 시
+      if (data.type === "signal_update") {
+        updateCountdownDisplay(data.signalState, data.remainingTime);
       }
     } catch (e) {
       console.warn("❌ 메시지 처리 오류:", e);
