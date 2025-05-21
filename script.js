@@ -16,10 +16,6 @@ const SPEED_CUTOFF = 0.5;
 let lastSentSpeed = -1;
 let lastSentLat = null;
 let lastSentLon = null;
-let countdownTimer = null;
-let timeLeft = null;
-let signalState = null;
-let lastResult = "";
 
 function updateSignalUI(state, remainingTime) {
   document.getElementById("signalBox").style.display = "block";
@@ -36,25 +32,19 @@ function updateSignalUI(state, remainingTime) {
   countdown.textContent = Math.max(0, Math.floor(remainingTime));
 }
 
-function updateStatusMessage() {
-  let message = "";
-  if (signalState === "green") {
-    message = lastResult.includes("가능")
-      ? `현재 녹색 신호이며, ${Math.floor(timeLeft)}초 남았습니다. 건너가세요.`
-      : `현재 녹색 신호이며, ${Math.floor(timeLeft)}초 남았습니다. 다음 신호를 기다리세요.`;
+function updateStatusMessage(state, remaining, result) {
+  let msg = "";
+  if (state === "green") {
+    msg = result.includes("가능")
+      ? `현재 녹색 신호이며, ${Math.floor(remaining)}초 남았습니다. 건너가세요.`
+      : `현재 녹색 신호이며, ${Math.floor(remaining)}초 남았습니다. 다음 신호를 기다리세요.`;
   } else {
-    message = `현재 적색신호입니다. 녹색으로 전환까지 ${Math.floor(timeLeft)}초 남았습니다.`;
+    msg = `현재 적색신호입니다. 녹색으로 전환까지 ${Math.floor(remaining)}초 남았습니다.`;
   }
-  document.getElementById("resultText").textContent = message;
+  document.getElementById("resultText").textContent = msg;
 }
 
-function updateDisplay(state, remaining, result) {
-  signalState = state;
-  timeLeft = remaining;
-  lastResult = result;
-  updateSignalUI(state, timeLeft);
-  updateStatusMessage();
-
+function updateInfoDisplay() {
   const avgSpeed = speedSamples.length > 0
     ? Math.floor(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length)
     : 0;
@@ -67,33 +57,26 @@ function updateDisplay(state, remaining, result) {
     `경도: ${currentLongitude.toFixed(6)}`;
 }
 
-function startRealtimeCountdown() {
-  if (countdownTimer) clearInterval(countdownTimer);
-  countdownTimer = setInterval(() => {
-    if (timeLeft !== null && signalState) {
-      timeLeft--;
-      updateSignalUI(signalState, timeLeft);
-      updateStatusMessage();
-    }
-  }, 1000);
-}
-
 function connectToServer() {
   socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
     document.getElementById("radarAnimation").style.display = "none";
+    document.getElementById("signalBox").style.display = "block";
+    document.getElementById("resultText").textContent = "신호 상태 분석 중입니다...";
   };
+
   socket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
       if (data.type === "crossing_result" && data.webUserId === userId) {
-        updateDisplay(data.signalState, data.remainingGreenTime, data.result);
-        startRealtimeCountdown();
+        updateSignalUI(data.signalState, data.remainingGreenTime);
+        updateStatusMessage(data.signalState, data.remainingGreenTime, data.result);
+        updateInfoDisplay();
       }
     } catch (e) {
-      console.warn("메시지 처리 오류:", e);
+      console.warn("❌ 메시지 처리 오류:", e);
     }
   };
 }
@@ -101,14 +84,17 @@ function connectToServer() {
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || !currentLatitude || !currentLongitude) return;
+
     const lat = +currentLatitude.toFixed(6);
     const lon = +currentLongitude.toFixed(6);
     const now = Date.now();
     const isStale = now - lastSpeedUpdateTime > 1000;
     const finalSpeed = (isStale || lastSpeed < SPEED_CUTOFF) ? 0.0 : lastSpeed;
+
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
+
     const hasChanged = finalSpeed !== lastSentSpeed || lat !== lastSentLat || lon !== lastSentLon;
     if (hasChanged) {
       socket.send(JSON.stringify({
@@ -122,7 +108,7 @@ function startUploadLoop() {
       lastSentLat = lat;
       lastSentLon = lon;
     }
-  }, 3000);
+  }, 1000); // 1초 주기로 업로드
 }
 
 function handleDeviceMotion(event) {
