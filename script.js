@@ -22,25 +22,18 @@ let lastSpokenMessage = "";
 let countdownSpoken = false;
 let previousSignalState = null;
 
-// ✅ iOS에서 음성 목록 로딩 보장
+// iOS TTS voice 로딩
 window.speechSynthesis.onvoiceschanged = () => {
   window.speechSynthesis.getVoices();
 };
 
-// ✅ TTS 출력
 function speakText(text) {
-  if (
-    'speechSynthesis' in window &&
-    !speechSynthesis.speaking &&
-    lastSpokenMessage !== text
-  ) {
+  if ('speechSynthesis' in window && !speechSynthesis.speaking && lastSpokenMessage !== text) {
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'ko-KR';
-
     const voices = speechSynthesis.getVoices();
-    const koreanVoice = voices.find(v => v.lang === 'ko-KR');
-    if (koreanVoice) utter.voice = koreanVoice;
-
+    const krVoice = voices.find(v => v.lang === 'ko-KR');
+    if (krVoice) utter.voice = krVoice;
     speechSynthesis.speak(utter);
     lastSpokenMessage = text;
   }
@@ -74,19 +67,27 @@ function updateSignalUI(state, remainingTime) {
   counter.textContent = Math.max(0, Math.floor(remainingTime));
 }
 
-function updateStatusMessage(state, remaining, result) {
+function updateStatusMessage(state, remaining, result, allowedTime = null) {
   const sec = Math.floor(remaining);
   let msg = "";
+  let color = "black";
 
   if (state === "green") {
-    msg = result.includes("가능")
-      ? `현재 녹색 신호이며, ${sec}초 남았습니다. 건너가세요.`
-      : `현재 녹색 신호이며, ${sec}초 남았습니다. 다음 신호를 기다리세요.`;
+    if (allowedTime !== null && remaining >= allowedTime) {
+      msg = `현재 녹색 신호이며, ${sec}초 남았습니다. 건너가세요.`;
+      color = "green";
+    } else {
+      msg = `현재 녹색 신호이며, ${sec}초 남았습니다. 다음 신호를 기다리세요.`;
+      color = "red";
+    }
   } else {
     msg = `현재 적색신호입니다. 녹색으로 전환까지 ${sec}초 남았습니다.`;
+    color = "red";
   }
 
-  document.getElementById("resultText").textContent = msg;
+  const resultEl = document.getElementById("resultText");
+  resultEl.textContent = msg;
+  resultEl.style.color = color;
 
   if (previousSignalState !== state) {
     speakText(msg);
@@ -128,7 +129,7 @@ function connectToServer() {
     const data = JSON.parse(event.data);
     if (data.type === "crossing_result" && data.webUserId === userId) {
       updateSignalUI(data.signalState, data.remainingGreenTime);
-      updateStatusMessage(data.signalState, data.remainingGreenTime, data.result);
+      updateStatusMessage(data.signalState, data.remainingGreenTime, data.result, data.allowedTime);
       updateInfoDisplay();
     }
   };
