@@ -7,20 +7,34 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="container">
-    <div id="signalDisplay" class="signal-box">
+  <div class="container" id="homePage">
+    <h1>보행자 지원 시스템</h1>
+
+    <button id="requestPermissionButton">센서 및 위치 권한 허용</button>
+
+    <div class="signal-box" id="signalDisplay" style="display:none;">
       <img id="signalIcon" src="" alt="신호 상태" />
       <div id="countdownText">잔여 시간: - 초</div>
     </div>
 
-    <div id="infoBox">
+    <div id="infoBox" style="display:none;">
       <div id="info">속도: - km/h | 위도: - | 경도: -</div>
     </div>
 
     <div id="resultText"></div>
-
-    <button id="requestPermissionButton">센서 및 위치 권한 허용</button>
   </div>
+
+  <div class="container" id="mypage" style="display: none;">
+    <h1>My Page</h1>
+    <div id="mypageInfo">
+      <strong>이름:</strong> 홍길동
+    </div>
+  </div>
+
+  <nav class="navbar">
+    <button id="homeBtn">Home</button>
+    <button id="mypageBtn">MyPage</button>
+  </nav>
 
   <script src="script.js"></script>
 </body>

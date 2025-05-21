@@ -56,3 +56,11 @@ button {
 button:hover {
   background-color: #155fa0;
 }
+
+.navbar {
+  display: flex;
+  justify-content: space-around;
+  background-color: #ffffff;
+  border-top: 1px solid #ddd;
+  padding: 10px 0;
+}

@@ -18,14 +18,19 @@ let lastSentLat = null;
 let lastSentLon = null;
 let countdownTimer = null;
 
-function updateDisplay(speed, lat, lon, state, remaining, result) {
-  document.getElementById("info").textContent = `속도: ${speed} km/h | 위도: ${lat} | 경도: ${lon}`;
-  document.getElementById("countdownText").textContent = `잔여 시간: ${remaining.toFixed(1)}초`;
-  document.getElementById("resultText").textContent = result;
-
+function updateDisplay(state, remaining, result) {
   const icon = document.getElementById("signalIcon");
   icon.src = state === "green" ? "walk-icon.png" : "stop-icon.png";
-  icon.alt = state === "green" ? "걷기 가능" : "정지 상태";
+  icon.alt = state === "green" ? "걷기 가능" : "정지";
+
+  document.getElementById("signalDisplay").style.display = "block";
+  document.getElementById("countdownText").textContent = `잔여 시간: ${remaining.toFixed(1)}초`;
+
+  document.getElementById("infoBox").style.display = "block";
+  document.getElementById("info").textContent =
+    `속도: ${lastSpeed} km/h | 위도: ${currentLatitude.toFixed(6)} | 경도: ${currentLongitude.toFixed(6)}`;
+
+  document.getElementById("resultText").textContent = `판단 결과: ${result}`;
 }
 
 function connectToServer() {
@@ -40,14 +45,7 @@ function connectToServer() {
     try {
       const data = JSON.parse(event.data);
       if (data.type === "crossing_result" && data.webUserId === userId) {
-        updateDisplay(
-          lastSpeed,
-          currentLatitude.toFixed(6),
-          currentLongitude.toFixed(6),
-          data.signalState,
-          data.remainingGreenTime,
-          `판단 결과: ${data.result}`
-        );
+        updateDisplay(data.signalState, data.remainingGreenTime, data.result);
 
         clearInterval(countdownTimer);
         let timeLeft = data.remainingGreenTime;
@@ -57,8 +55,8 @@ function connectToServer() {
           if (timeLeft <= 0) clearInterval(countdownTimer);
         }, 1000);
       }
-    } catch (err) {
-      console.warn("메시지 처리 오류:", err);
+    } catch (e) {
+      console.warn("메시지 처리 오류:", e);
     }
   };
 }
@@ -71,10 +69,11 @@ function startUploadLoop() {
     const lat = +currentLatitude.toFixed(6);
     const lon = +currentLongitude.toFixed(6);
     const now = Date.now();
-
     const isStale = now - lastSpeedUpdateTime > 1000;
     const finalSpeed = (isStale || lastSpeed < SPEED_CUTOFF) ? 0.0 : lastSpeed;
-    const avgSpeed = speedSamples.length > 0 ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2) : 0.0;
+    const avgSpeed = speedSamples.length > 0
+      ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
+      : 0.0;
 
     const hasChanged = finalSpeed !== lastSentSpeed || lat !== lastSentLat || lon !== lastSentLon;
 
@@ -147,4 +146,14 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
   );
 
   window.addEventListener("devicemotion", handleDeviceMotion, true);
+});
+
+document.getElementById("homeBtn").addEventListener("click", () => {
+  document.getElementById("homePage").style.display = "block";
+  document.getElementById("mypage").style.display = "none";
+});
+
+document.getElementById("mypageBtn").addEventListener("click", () => {
+  document.getElementById("homePage").style.display = "none";
+  document.getElementById("mypage").style.display = "block";
 });
