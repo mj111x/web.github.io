@@ -17,112 +17,101 @@ let lastSentSpeed = -1;
 let lastSentLat = null;
 let lastSentLon = null;
 
-function updateSignalUI(state, remainingTime) {
-  document.getElementById("signalBox").style.display = "block";
-  const redLight = document.getElementById("lightRed");
-  const greenLight = document.getElementById("lightGreen");
-  const countdown = document.getElementById("countdownNumber");
+let lastLat = null;
+let lastLon = null;
+let lastGPSTime = null;
+let gpsSpeed = 0;
 
-  redLight.classList.remove("on");
-  greenLight.classList.remove("on");
-
-  if (state === "red") redLight.classList.add("on");
-  else greenLight.classList.add("on");
-
-  countdown.textContent = Math.max(0, Math.floor(remainingTime));
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const dx = (lat2 - lat1) * 111000;
+  const dy = (lon2 - lon1) * 88000;
+  return Math.sqrt(dx * dx + dy * dy);
 }
 
-function updateStatusMessage(state, remaining, result) {
-  let msg = "";
-  if (state === "green") {
-    msg = result.includes("가능")
-      ? `현재 녹색 신호이며, ${Math.floor(remaining)}초 남았습니다. 건너가세요.`
-      : `현재 녹색 신호이며, ${Math.floor(remaining)}초 남았습니다. 다음 신호를 기다리세요.`;
-  } else {
-    msg = `현재 적색신호입니다. 녹색으로 전환까지 ${Math.floor(remaining)}초 남았습니다.`;
+// ⛳ GPS 위치 기반 속도 계산
+navigator.geolocation.watchPosition(
+  (pos) => {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+    const now = Date.now();
+
+    currentLatitude = lat;
+    currentLongitude = lon;
+
+    if (lastLat !== null && lastLon !== null && lastGPSTime !== null) {
+      const dist = calculateDistance(lat, lon, lastLat, lastLon); // m
+      const dt = (now - lastGPSTime) / 1000; // sec
+      if (dt > 0 && dist < 20) gpsSpeed = dist / dt; // m/s
+    }
+
+    lastLat = lat;
+    lastLon = lon;
+    lastGPSTime = now;
+  },
+  (err) => console.warn("GPS 오류:", err.message),
+  { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+);
+
+// 🏃 가속도 기반 걸음 감지 속도 계산
+function handleDeviceMotion(event) {
+  const accY = event.acceleration.y || 0;
+  const now = Date.now();
+
+  if (Math.abs(accY) > STEP_THRESHOLD && now - lastStepTime > STEP_INTERVAL) {
+    const stepTime = (now - lastStepTime) / 1000;
+    lastStepTime = now;
+    let accSpeed = avgStrideLength / stepTime; // m/s
+    accSpeed = Math.min(accSpeed, MAX_SPEED_KMH / 3.6);
+    lastSpeed = +accSpeed.toFixed(2);
+    lastSpeedUpdateTime = now;
+    if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
   }
-  document.getElementById("resultText").textContent = msg;
 }
 
-function updateInfoDisplay() {
-  const avgSpeed = speedSamples.length > 0
-    ? Math.floor(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length)
-    : 0;
-
-  document.getElementById("infoBox").style.display = "block";
-  document.getElementById("info").innerHTML =
-    `현재 속도: ${Math.floor(lastSpeed)} km/h<br>` +
-    `누적 평균 속도: ${avgSpeed} km/h<br>` +
-    `위도: ${currentLatitude.toFixed(6)}<br>` +
-    `경도: ${currentLongitude.toFixed(6)}`;
-}
-
+// 🌐 서버 연결
 function connectToServer() {
-  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
+  socket = new WebSocket("wss://your-server-address:3000/");
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
-    document.getElementById("radarAnimation").style.display = "none";
-    document.getElementById("signalBox").style.display = "block";
-    document.getElementById("resultText").textContent = "신호 상태 분석 중입니다...";
   };
 
   socket.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      if (data.type === "crossing_result" && data.webUserId === userId) {
-        updateSignalUI(data.signalState, data.remainingGreenTime);
-        updateStatusMessage(data.signalState, data.remainingGreenTime, data.result);
-        updateInfoDisplay();
-      }
-    } catch (e) {
-      console.warn("❌ 메시지 처리 오류:", e);
+    const data = JSON.parse(event.data);
+    if (data.type === "crossing_result" && data.webUserId === userId) {
+      // 신호등 UI 등 업데이트...
     }
   };
 }
 
+// 🚀 서버로 1초마다 하이브리드 속도 전송
 function startUploadLoop() {
   setInterval(() => {
-    if (!socket || socket.readyState !== WebSocket.OPEN || !currentLatitude || !currentLongitude) return;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    if (!currentLatitude || !currentLongitude) return;
 
-    const lat = +currentLatitude.toFixed(6);
-    const lon = +currentLongitude.toFixed(6);
     const now = Date.now();
-    const isStale = now - lastSpeedUpdateTime > 1000;
-    const finalSpeed = (isStale || lastSpeed < SPEED_CUTOFF) ? 0.0 : lastSpeed;
+    const isStale = now - lastSpeedUpdateTime > 1500;
 
+    const accComponent = isStale ? 0 : lastSpeed;
+    const finalSpeed = +(0.6 * accComponent + 0.4 * gpsSpeed).toFixed(2); // hybrid m/s
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
 
-    const hasChanged = finalSpeed !== lastSentSpeed || lat !== lastSentLat || lon !== lastSentLon;
-    if (hasChanged) {
-      socket.send(JSON.stringify({
-        type: "web_data",
-        id: userId,
-        speed: finalSpeed,
-        averageSpeed: avgSpeed,
-        location: { latitude: lat, longitude: lon }
-      }));
-      lastSentSpeed = finalSpeed;
-      lastSentLat = lat;
-      lastSentLon = lon;
-    }
-  }, 1000); // 1초 주기로 업로드
-}
+    const payload = {
+      type: "web_data",
+      id: userId,
+      speed: finalSpeed,
+      averageSpeed: avgSpeed,
+      location: { latitude: +currentLatitude.toFixed(6), longitude: +currentLongitude.toFixed(6) }
+    };
 
-function handleDeviceMotion(event) {
-  const accY = event.acceleration.y || 0;
-  const now = Date.now();
-  if (Math.abs(accY) > STEP_THRESHOLD && now - lastStepTime > STEP_INTERVAL) {
-    const stepTime = (now - lastStepTime) / 1000;
-    lastStepTime = now;
-    let speed = avgStrideLength / stepTime;
-    speed = Math.min(speed * 3.6, MAX_SPEED_KMH);
-    lastSpeed = +speed.toFixed(2);
-    lastSpeedUpdateTime = now;
-    if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
-  }
+    socket.send(JSON.stringify(payload));
+    lastSentSpeed = finalSpeed;
+    lastSentLat = currentLatitude;
+    lastSentLon = currentLongitude;
+  }, 1000);
 }
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
@@ -130,51 +119,28 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
     if (typeof DeviceMotionEvent?.requestPermission === "function") {
       const permission = await DeviceMotionEvent.requestPermission();
       if (permission !== "granted") {
-        alert("센서 권한이 거부되었습니다.");
+        alert("센서 권한이 필요합니다.");
         return;
       }
     }
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          currentLatitude = pos.coords.latitude;
-          currentLongitude = pos.coords.longitude;
-          connectToServer();
-        },
-        (err) => {
-          alert("위치 권한이 필요합니다.");
-          console.warn("위치 권한 거부:", err.message);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    }
-
-    navigator.geolocation.watchPosition(
+    navigator.geolocation.getCurrentPosition(
       (pos) => {
         currentLatitude = pos.coords.latitude;
         currentLongitude = pos.coords.longitude;
+        connectToServer();
       },
-      (err) => console.warn("위치 추적 실패:", err.message),
+      (err) => {
+        alert("위치 권한이 필요합니다.");
+        console.warn("위치 권한 거부:", err.message);
+      },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
 
-    document.getElementById("requestPermissionButton").style.display = "none";
-    document.getElementById("radarAnimation").style.display = "block";
-
     window.addEventListener("devicemotion", handleDeviceMotion, true);
+    document.getElementById("requestPermissionButton").style.display = "none";
   } catch (e) {
     alert("권한 요청 중 오류 발생");
     console.error(e);
   }
-});
-
-document.getElementById("homeBtn").addEventListener("click", () => {
-  document.getElementById("homePage").style.display = "block";
-  document.getElementById("mypage").style.display = "none";
-});
-
-document.getElementById("mypageBtn").addEventListener("click", () => {
-  document.getElementById("homePage").style.display = "none";
-  document.getElementById("mypage").style.display = "block";
 });
