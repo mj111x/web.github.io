@@ -13,7 +13,6 @@ const STEP_THRESHOLD = 2.5;
 const MAX_SPEED_KMH = 3;
 const SPEED_CUTOFF = 0.5;
 
-let lastSentSpeed = -1;
 let lastLat = null;
 let lastLon = null;
 let lastGPSTime = null;
@@ -23,37 +22,44 @@ let lastSpokenMessage = "";
 let countdownSpoken = false;
 let previousSignalState = null;
 
-// ✅ 음성 출력 (중복 & 재생 중 방지)
+// ✅ iOS에서 음성 목록 로딩 보장
+window.speechSynthesis.onvoiceschanged = () => {
+  window.speechSynthesis.getVoices();
+};
+
+// ✅ TTS 출력
 function speakText(text) {
   if (
     'speechSynthesis' in window &&
-    lastSpokenMessage !== text &&
-    !speechSynthesis.speaking
+    !speechSynthesis.speaking &&
+    lastSpokenMessage !== text
   ) {
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = "ko-KR";
+    utter.lang = 'ko-KR';
+
+    const voices = speechSynthesis.getVoices();
+    const koreanVoice = voices.find(v => v.lang === 'ko-KR');
+    if (koreanVoice) utter.voice = koreanVoice;
+
     speechSynthesis.speak(utter);
     lastSpokenMessage = text;
   }
 }
 
-// ✅ 카운트다운 음성
 function speakCountdown(seconds) {
   if ('speechSynthesis' in window) {
     const utter = new SpeechSynthesisUtterance(`${seconds}초`);
-    utter.lang = "ko-KR";
+    utter.lang = 'ko-KR';
     speechSynthesis.speak(utter);
   }
 }
 
-// ✅ 거리 계산
 function calculateDistance(lat1, lon1, lat2, lon2) {
   const dx = (lat2 - lat1) * 111000;
   const dy = (lon2 - lon1) * 88000;
   return Math.sqrt(dx * dx + dy * dy);
 }
 
-// ✅ 신호등 UI
 function updateSignalUI(state, remainingTime) {
   document.getElementById("signalBox").style.display = "block";
   const red = document.getElementById("lightRed");
@@ -68,7 +74,6 @@ function updateSignalUI(state, remainingTime) {
   counter.textContent = Math.max(0, Math.floor(remainingTime));
 }
 
-// ✅ 멘트 & TTS
 function updateStatusMessage(state, remaining, result) {
   const sec = Math.floor(remaining);
   let msg = "";
@@ -97,7 +102,6 @@ function updateStatusMessage(state, remaining, result) {
   }
 }
 
-// ✅ 사용자 정보 표시
 function updateInfoDisplay() {
   const avg = speedSamples.length > 0
     ? Math.floor(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length)
@@ -110,7 +114,6 @@ function updateInfoDisplay() {
     `경도: ${currentLongitude.toFixed(6)}`;
 }
 
-// ✅ WebSocket 연결
 function connectToServer() {
   socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
   socket.onopen = () => {
@@ -131,7 +134,6 @@ function connectToServer() {
   };
 }
 
-// ✅ 1초마다 서버 전송
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
@@ -152,12 +154,14 @@ function startUploadLoop() {
       id: userId,
       speed: finalSpeed,
       averageSpeed: avgSpeed,
-      location: { latitude: +currentLatitude.toFixed(6), longitude: +currentLongitude.toFixed(6) }
+      location: {
+        latitude: +currentLatitude.toFixed(6),
+        longitude: +currentLongitude.toFixed(6)
+      }
     }));
   }, 1000);
 }
 
-// ✅ 걷기 감지
 function handleDeviceMotion(event) {
   const accY = event.acceleration.y || 0;
   const now = Date.now();
@@ -172,7 +176,6 @@ function handleDeviceMotion(event) {
   }
 }
 
-// ✅ GPS 속도 보정
 navigator.geolocation.watchPosition(
   (pos) => {
     const lat = pos.coords.latitude;
@@ -195,7 +198,6 @@ navigator.geolocation.watchPosition(
   { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
 );
 
-// ✅ 센서 및 위치 권한 요청
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   try {
     if (typeof DeviceMotionEvent?.requestPermission === "function") {
@@ -229,7 +231,6 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
   }
 });
 
-// ✅ 페이지 전환
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
   document.getElementById("mypage").style.display = "none";
