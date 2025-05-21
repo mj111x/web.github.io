@@ -18,8 +18,8 @@ let lastSentLat = null;
 let lastSentLon = null;
 let isEvaluated = false;
 
-//const resultDiv = document.getElementById("crossingResult");
-//const countdownDiv = document.getElementById("signalCountdown");
+const resultDiv = document.getElementById("crossingResult");
+const countdownDiv = document.getElementById("signalCountdown");
 const statusDiv = document.getElementById("statusMessage");
 
 let countdownTimer = null;
@@ -36,18 +36,18 @@ function updateCountdownDisplay(state, time) {
   const isCountdown = time <= 10;
   const countdownNotice = isCountdown ? `<br>⏳ <strong>${Math.ceil(time)}초 남았습니다.</strong>` : "";
 
-  if (state === "🟢 초록불") {
+  if (state === " 초록불") {
     if (resultDiv.textContent.includes("✅")) {
-      statusDiv.innerHTML = `🟢 현재 녹색 신호이며 ${time.toFixed(1)}초 남았습니다.<br>✅ <strong>횡단 가능합니다.</strong>${countdownNotice}`;
+      statusDiv.innerHTML = ` 현재 녹색 신호이며 ${time.toFixed(1)}초 남았습니다.<br> <strong>횡단 가능합니다.</strong>${countdownNotice}`;
     } else {
-      statusDiv.innerHTML = `🟢 현재 녹색 신호이며 ${time.toFixed(1)}초 남았습니다.<br>❌ <strong>횡단 불가능합니다.</strong>${countdownNotice}`;
+      statusDiv.innerHTML = ` 현재 녹색 신호이며 ${time.toFixed(1)}초 남았습니다.<br> <strong>횡단 불가능합니다.</strong>${countdownNotice}`;
     }
   } else {
-    statusDiv.innerHTML = `🔴 현재 적색신호입니다.<br>🕒 <strong>녹색으로 전환까지 ${time.toFixed(1)}초 남았습니다.</strong>${countdownNotice}`;
+    statusDiv.innerHTML = ` 현재 적색신호입니다.<br> <strong>녹색으로 전환까지 ${time.toFixed(1)}초 남았습니다.</strong>${countdownNotice}`;
   }
 
-  if (state === "🟢 초록불") {
-    if (resultDiv.textContent.includes("✅")) {
+  if (state === "초록불") {
+    if (resultDiv.textContent.includes("")) {
       resultDiv.textContent = `횡단 판단 결과: 횡단 가능`;
       resultDiv.style.color = "green";
     } else {
