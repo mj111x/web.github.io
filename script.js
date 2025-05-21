@@ -18,18 +18,9 @@ let lastSentLat = null;
 let lastSentLon = null;
 let isEvaluated = false;
 
-const resultDiv = document.createElement("div");
-resultDiv.id = "crossingResult";
-resultDiv.style.marginTop = "12px";
-resultDiv.style.fontSize = "18px";
-resultDiv.style.fontWeight = "bold";
-document.getElementById("homePage").appendChild(resultDiv);
-
-const countdownDiv = document.createElement("div");
-countdownDiv.id = "signalCountdown";
-countdownDiv.style.marginTop = "8px";
-countdownDiv.style.fontSize = "16px";
-document.getElementById("homePage").appendChild(countdownDiv);
+const resultDiv = document.getElementById("crossingResult");
+const countdownDiv = document.getElementById("signalCountdown");
+const statusDiv = document.getElementById("statusMessage");
 
 let countdownTimer = null;
 let signalState = null;
@@ -37,20 +28,38 @@ let signalRemainingTime = 0;
 let greenDuration = 30;
 let redDuration = 60;
 
-// ✅ 실시간 상태 표시 및 판단 결과 갱신
 function updateCountdownDisplay(state, time) {
   countdownDiv.textContent = `⏱ 신호 상태: ${state} | 잔여 시간: ${time.toFixed(1)}초`;
 
+  statusDiv.style.display = "block";
+
+  const isCountdown = time <= 10;
+  const countdownNotice = isCountdown ? `<br>⏳ <strong>${Math.ceil(time)}초 남았습니다.</strong>` : "";
+
   if (state === "🟢 초록불") {
-    resultDiv.textContent = `🚦 횡단 판단 결과: ✅ 횡단 가능`;
-    resultDiv.style.color = "green";
+    if (resultDiv.textContent.includes("✅")) {
+      statusDiv.innerHTML = `🟢 현재 녹색 신호이며 ${time.toFixed(1)}초 남았습니다.<br>✅ <strong>횡단 가능합니다.</strong>${countdownNotice}`;
+    } else {
+      statusDiv.innerHTML = `🟢 현재 녹색 신호이며 ${time.toFixed(1)}초 남았습니다.<br>❌ <strong>횡단 불가능합니다.</strong>${countdownNotice}`;
+    }
+  } else {
+    statusDiv.innerHTML = `🔴 현재 적색신호입니다.<br>🕒 <strong>녹색으로 전환까지 ${time.toFixed(1)}초 남았습니다.</strong>${countdownNotice}`;
+  }
+
+  if (state === "🟢 초록불") {
+    if (resultDiv.textContent.includes("✅")) {
+      resultDiv.textContent = `🚦 횡단 판단 결과: ✅ 횡단 가능`;
+      resultDiv.style.color = "green";
+    } else {
+      resultDiv.textContent = `🚦 횡단 판단 결과: ❌ 횡단 불가`;
+      resultDiv.style.color = "red";
+    }
   } else {
     resultDiv.textContent = `🚦 횡단 판단 결과: ❌ 횡단 불가`;
     resultDiv.style.color = "red";
   }
 }
 
-// ✅ [방법 1] 클라이언트에서 반복 주기로 상태 계산
 function startSimulatedCountdown(initialState, initialRemainingTime, greenDur, redDur) {
   clearInterval(countdownTimer);
   signalState = initialState;
@@ -164,15 +173,18 @@ function connectToServer() {
     try {
       const data = JSON.parse(event.data);
 
-      // ✅ 방법 1: 서버에서 판단 결과만 받았을 때
       if (data.type === "crossing_result" && data.webUserId === userId) {
         isEvaluated = true;
-        startSimulatedCountdown(data.signalState, data.remainingGreenTime, 30, 60); // ← 실제 서버값 반영
-      }
 
-      // ✅ 방법 2: 서버가 실시간 신호 상태 전송 시
-      if (data.type === "signal_update") {
-        updateCountdownDisplay(data.signalState, data.remainingTime);
+        if (data.result.includes("가능")) {
+          resultDiv.textContent = `🚦 횡단 판단 결과: ✅ 횡단 가능`;
+          resultDiv.style.color = "green";
+        } else {
+          resultDiv.textContent = `🚦 횡단 판단 결과: ❌ 횡단 불가`;
+          resultDiv.style.color = "red";
+        }
+
+        startSimulatedCountdown(data.signalState, data.remainingGreenTime, 30, 60);
       }
     } catch (e) {
       console.warn("❌ 메시지 처리 오류:", e);
