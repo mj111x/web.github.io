@@ -23,7 +23,6 @@ let lastResult = "";
 
 function updateSignalUI(state, remainingTime) {
   document.getElementById("signalBox").style.display = "block";
-
   const redLight = document.getElementById("lightRed");
   const greenLight = document.getElementById("lightGreen");
   const countdown = document.getElementById("countdownNumber");
@@ -31,11 +30,8 @@ function updateSignalUI(state, remainingTime) {
   redLight.classList.remove("on");
   greenLight.classList.remove("on");
 
-  if (state === "red") {
-    redLight.classList.add("on");
-  } else {
-    greenLight.classList.add("on");
-  }
+  if (state === "red") redLight.classList.add("on");
+  else greenLight.classList.add("on");
 
   countdown.textContent = Math.max(0, Math.floor(remainingTime));
 }
@@ -60,12 +56,12 @@ function updateDisplay(state, remaining, result) {
   updateStatusMessage();
 
   const avgSpeed = speedSamples.length > 0
-    ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
-    : 0.0;
+    ? Math.floor(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length)
+    : 0;
 
   document.getElementById("infoBox").style.display = "block";
   document.getElementById("info").innerHTML =
-    `현재 속도: ${lastSpeed} km/h<br>` +
+    `현재 속도: ${Math.floor(lastSpeed)} km/h<br>` +
     `누적 평균 속도: ${avgSpeed} km/h<br>` +
     `위도: ${currentLatitude.toFixed(6)}<br>` +
     `경도: ${currentLongitude.toFixed(6)}`;
@@ -75,7 +71,7 @@ function startRealtimeCountdown() {
   if (countdownTimer) clearInterval(countdownTimer);
   countdownTimer = setInterval(() => {
     if (timeLeft !== null && signalState) {
-      timeLeft -= 1;
+      timeLeft--;
       updateSignalUI(signalState, timeLeft);
       updateStatusMessage();
     }
@@ -84,13 +80,11 @@ function startRealtimeCountdown() {
 
 function connectToServer() {
   socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
-
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
     document.getElementById("radarAnimation").style.display = "none";
   };
-
   socket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
@@ -106,9 +100,7 @@ function connectToServer() {
 
 function startUploadLoop() {
   setInterval(() => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    if (!currentLatitude || !currentLongitude) return;
-
+    if (!socket || socket.readyState !== WebSocket.OPEN || !currentLatitude || !currentLongitude) return;
     const lat = +currentLatitude.toFixed(6);
     const lon = +currentLongitude.toFixed(6);
     const now = Date.now();
@@ -117,18 +109,15 @@ function startUploadLoop() {
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
-
     const hasChanged = finalSpeed !== lastSentSpeed || lat !== lastSentLat || lon !== lastSentLon;
-
     if (hasChanged) {
-      const payload = {
+      socket.send(JSON.stringify({
         type: "web_data",
         id: userId,
         speed: finalSpeed,
         averageSpeed: avgSpeed,
         location: { latitude: lat, longitude: lon }
-      };
-      socket.send(JSON.stringify(payload));
+      }));
       lastSentSpeed = finalSpeed;
       lastSentLat = lat;
       lastSentLon = lon;
