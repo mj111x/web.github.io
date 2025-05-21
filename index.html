@@ -20,7 +20,7 @@
     <div class="traffic-light" id="signalBox" style="display: none;">
       <div class="light red" id="lightRed"></div>
       <div class="light green" id="lightGreen"></div>
-      <div class="countdown-box" id="countdownBox"><span id="countdownNumber">0</span></div>
+      <div class="countdown-box"><span id="countdownNumber">0</span></div>
     </div>
 
     <div id="resultText" class="status-text"></div>
@@ -28,6 +28,10 @@
     <div id="infoBox" style="display: none;">
       <div id="info">속도: - km/h | 위도: - | 경도: -</div>
     </div>
+
+    <!-- ✅ 위치 출력용 요소 (오류 방지용) -->
+    <p id="lat" style="display:none;"></p>
+    <p id="lon" style="display:none;"></p>
   </div>
 
   <div class="container" id="mypage" style="display: none;">
