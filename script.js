@@ -1,3 +1,13 @@
+document.getElementById("homeBtn").addEventListener("click", () => {
+  document.getElementById("homePage").style.display = "block";
+  document.getElementById("mypage").style.display = "none";
+});
+
+document.getElementById("mypageBtn").addEventListener("click", () => {
+  document.getElementById("homePage").style.display = "none";
+  document.getElementById("mypage").style.display = "block";
+});
+
 let lastStepTime = Date.now();
 let lastSpeed = 0;
 let lastSpeedUpdateTime = 0;
@@ -39,6 +49,10 @@ function connectToServer() {
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
+
+    document.getElementById("radarAnimation").style.display = "none";
+    document.getElementById("signalDisplay").style.display = "block";
+    document.getElementById("infoBox").style.display = "block";
   };
 
   socket.onmessage = (event) => {
@@ -108,52 +122,47 @@ function handleDeviceMotion(event) {
 }
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
-  if (typeof DeviceMotionEvent?.requestPermission === "function") {
-    try {
+  try {
+    if (typeof DeviceMotionEvent?.requestPermission === "function") {
       const motionPermission = await DeviceMotionEvent.requestPermission();
       if (motionPermission !== "granted") {
         alert("센서 권한이 필요합니다.");
         return;
       }
-    } catch (err) {
-      alert("센서 권한 요청 실패");
-      return;
     }
-  }
 
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          currentLatitude = pos.coords.latitude;
+          currentLongitude = pos.coords.longitude;
+          document.getElementById("lat")?.textContent = currentLatitude.toFixed(6);
+          document.getElementById("lon")?.textContent = currentLongitude.toFixed(6);
+          connectToServer();
+        },
+        (err) => {
+          alert("위치 권한이 필요합니다.");
+          console.warn("위치 권한 거부:", err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    navigator.geolocation.watchPosition(
       (pos) => {
         currentLatitude = pos.coords.latitude;
         currentLongitude = pos.coords.longitude;
-        connectToServer();
       },
-      (err) => {
-        alert("위치 권한이 필요합니다.");
-        console.warn("위치 권한 거부:", err.message);
-      },
+      (err) => console.warn("❌ 위치 추적 실패:", err.message),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+
+    document.getElementById("requestPermissionButton").style.display = "none";
+    document.getElementById("radarAnimation").style.display = "block";
+
+    window.addEventListener("devicemotion", handleDeviceMotion, true);
+  } catch (e) {
+    alert("권한 요청 중 오류 발생");
+    console.error(e);
   }
-
-  navigator.geolocation.watchPosition(
-    (pos) => {
-      currentLatitude = pos.coords.latitude;
-      currentLongitude = pos.coords.longitude;
-    },
-    (err) => console.warn("위치 추적 실패:", err.message),
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-  );
-
-  window.addEventListener("devicemotion", handleDeviceMotion, true);
-});
-
-document.getElementById("homeBtn").addEventListener("click", () => {
-  document.getElementById("homePage").style.display = "block";
-  document.getElementById("mypage").style.display = "none";
-});
-
-document.getElementById("mypageBtn").addEventListener("click", () => {
-  document.getElementById("homePage").style.display = "none";
-  document.getElementById("mypage").style.display = "block";
 });
