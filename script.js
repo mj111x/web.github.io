@@ -17,8 +17,12 @@ let lastSentSpeed = -1;
 let lastSentLat = null;
 let lastSentLon = null;
 let countdownTimer = null;
+let timeLeft = null;
+let signalState = null;
 
-function updateSignalUI(signalState, remainingTime) {
+function updateSignalUI(state, remainingTime) {
+  document.getElementById("signalBox").style.display = "block";
+
   const redLight = document.getElementById("lightRed");
   const greenLight = document.getElementById("lightGreen");
   const countdown = document.getElementById("countdownNumber");
@@ -26,17 +30,19 @@ function updateSignalUI(signalState, remainingTime) {
   redLight.classList.remove("on");
   greenLight.classList.remove("on");
 
-  if (signalState === "red") {
+  if (state === "red") {
     redLight.classList.add("on");
   } else {
     greenLight.classList.add("on");
   }
 
-  countdown.textContent = Math.ceil(remainingTime);
+  countdown.textContent = Math.max(0, Math.ceil(remainingTime));
 }
 
 function updateDisplay(state, remaining, result) {
-  updateSignalUI(state, remaining);
+  signalState = state;
+  timeLeft = remaining;
+  updateSignalUI(state, timeLeft);
 
   const avgSpeed = speedSamples.length > 0
     ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
@@ -61,6 +67,16 @@ function updateDisplay(state, remaining, result) {
   document.getElementById("resultText").textContent = message;
 }
 
+function startRealtimeCountdown() {
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    if (timeLeft !== null && signalState) {
+      timeLeft -= 1;
+      updateSignalUI(signalState, timeLeft);
+    }
+  }, 1000);
+}
+
 function connectToServer() {
   socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
 
@@ -75,14 +91,7 @@ function connectToServer() {
       const data = JSON.parse(event.data);
       if (data.type === "crossing_result" && data.webUserId === userId) {
         updateDisplay(data.signalState, data.remainingGreenTime, data.result);
-
-        clearInterval(countdownTimer);
-        let timeLeft = data.remainingGreenTime;
-        countdownTimer = setInterval(() => {
-          timeLeft -= 1;
-          updateSignalUI(data.signalState, timeLeft);
-          if (timeLeft <= 0) clearInterval(countdownTimer);
-        }, 1000);
+        startRealtimeCountdown();
       }
     } catch (e) {
       console.warn("메시지 처리 오류:", e);
@@ -178,4 +187,14 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
     alert("권한 요청 중 오류 발생");
     console.error(e);
   }
+});
+
+document.getElementById("homeBtn").addEventListener("click", () => {
+  document.getElementById("homePage").style.display = "block";
+  document.getElementById("mypage").style.display = "none";
+});
+
+document.getElementById("mypageBtn").addEventListener("click", () => {
+  document.getElementById("homePage").style.display = "none";
+  document.getElementById("mypage").style.display = "block";
 });
