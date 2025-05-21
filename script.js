@@ -1,13 +1,3 @@
-document.getElementById("homeBtn").addEventListener("click", () => {
-  document.getElementById("homePage").style.display = "block";
-  document.getElementById("mypage").style.display = "none";
-});
-
-document.getElementById("mypageBtn").addEventListener("click", () => {
-  document.getElementById("homePage").style.display = "none";
-  document.getElementById("mypage").style.display = "block";
-});
-
 let lastStepTime = Date.now();
 let lastSpeed = 0;
 let lastSpeedUpdateTime = 0;
@@ -124,9 +114,9 @@ function handleDeviceMotion(event) {
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   try {
     if (typeof DeviceMotionEvent?.requestPermission === "function") {
-      const motionPermission = await DeviceMotionEvent.requestPermission();
-      if (motionPermission !== "granted") {
-        alert("센서 권한이 필요합니다.");
+      const permission = await DeviceMotionEvent.requestPermission();
+      if (permission !== "granted") {
+        alert("센서 권한이 거부되었습니다.");
         return;
       }
     }
@@ -136,8 +126,6 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
         (pos) => {
           currentLatitude = pos.coords.latitude;
           currentLongitude = pos.coords.longitude;
-          document.getElementById("lat")?.textContent = currentLatitude.toFixed(6);
-          document.getElementById("lon")?.textContent = currentLongitude.toFixed(6);
           connectToServer();
         },
         (err) => {
@@ -153,7 +141,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
         currentLatitude = pos.coords.latitude;
         currentLongitude = pos.coords.longitude;
       },
-      (err) => console.warn("❌ 위치 추적 실패:", err.message),
+      (err) => console.warn("위치 추적 실패:", err.message),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
 
