@@ -17,9 +17,11 @@
       <div class="radar-wave delay"></div>
     </div>
 
-    <div class="signal-box" id="signalDisplay" style="display:none;">
-      <img id="signalIcon" src="" alt="신호 상태" />
-      <div id="countdownText">잔여 시간: - 초</div>
+    <!-- 신호등 표시 -->
+    <div class="traffic-light">
+      <div class="light red" id="lightRed"></div>
+      <div class="light green" id="lightGreen"></div>
+      <div class="countdown-box"><span id="countdownNumber">0</span></div>
     </div>
 
     <div id="infoBox" style="display:none;">

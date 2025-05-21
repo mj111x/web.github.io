@@ -18,19 +18,47 @@ let lastSentLat = null;
 let lastSentLon = null;
 let countdownTimer = null;
 
-function updateDisplay(state, remaining, result) {
-  const icon = document.getElementById("signalIcon");
-  icon.src = state === "green" ? "walk-icon.png" : "stop-icon.png";
-  icon.alt = state === "green" ? "걷기 가능" : "정지";
+function updateSignalUI(signalState, remainingTime) {
+  const redLight = document.getElementById("lightRed");
+  const greenLight = document.getElementById("lightGreen");
+  const countdown = document.getElementById("countdownNumber");
 
-  document.getElementById("signalDisplay").style.display = "block";
-  document.getElementById("countdownText").textContent = `잔여 시간: ${remaining.toFixed(1)}초`;
+  redLight.classList.remove("on");
+  greenLight.classList.remove("on");
+
+  if (signalState === "red") {
+    redLight.classList.add("on");
+  } else {
+    greenLight.classList.add("on");
+  }
+
+  countdown.textContent = Math.ceil(remainingTime);
+}
+
+function updateDisplay(state, remaining, result) {
+  updateSignalUI(state, remaining);
+
+  const avgSpeed = speedSamples.length > 0
+    ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
+    : 0.0;
 
   document.getElementById("infoBox").style.display = "block";
-  document.getElementById("info").textContent =
-    `속도: ${lastSpeed} km/h | 위도: ${currentLatitude.toFixed(6)} | 경도: ${currentLongitude.toFixed(6)}`;
+  document.getElementById("info").innerHTML =
+    `현재 속도: ${lastSpeed} km/h<br>` +
+    `누적 평균 속도: ${avgSpeed} km/h<br>` +
+    `위도: ${currentLatitude.toFixed(6)}<br>` +
+    `경도: ${currentLongitude.toFixed(6)}`;
 
-  document.getElementById("resultText").textContent = `판단 결과: ${result}`;
+  let message = "";
+  if (state === "green") {
+    message = result.includes("가능")
+      ? `현재 녹색 신호이며, ${remaining.toFixed(1)}초 남았습니다. 건너가세요.`
+      : `현재 녹색 신호이며, ${remaining.toFixed(1)}초 남았습니다. 다음 신호를 기다리세요.`;
+  } else {
+    message = `현재 적색신호입니다. 녹색으로 전환까지 ${remaining.toFixed(1)}초 남았습니다.`;
+  }
+
+  document.getElementById("resultText").textContent = message;
 }
 
 function connectToServer() {
@@ -39,10 +67,7 @@ function connectToServer() {
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
-
     document.getElementById("radarAnimation").style.display = "none";
-    document.getElementById("signalDisplay").style.display = "block";
-    document.getElementById("infoBox").style.display = "block";
   };
 
   socket.onmessage = (event) => {
@@ -55,7 +80,7 @@ function connectToServer() {
         let timeLeft = data.remainingGreenTime;
         countdownTimer = setInterval(() => {
           timeLeft -= 1;
-          document.getElementById("countdownText").textContent = `잔여 시간: ${timeLeft.toFixed(1)}초`;
+          updateSignalUI(data.signalState, timeLeft);
           if (timeLeft <= 0) clearInterval(countdownTimer);
         }, 1000);
       }

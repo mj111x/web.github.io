@@ -26,20 +26,39 @@ button:hover {
   background-color: #1565c0;
 }
 
-.signal-box {
-  text-align: center;
-  margin-top: 20px;
-}
-
-#signalIcon {
+.traffic-light {
   width: 100px;
-  height: auto;
-  margin-bottom: 10px;
+  background-color: #333;
+  padding: 10px;
+  border-radius: 10px;
+  margin: 20px auto;
 }
 
-#countdownText {
-  font-size: 20px;
+.light {
+  width: 60px;
+  height: 60px;
+  margin: 10px auto;
+  border-radius: 50%;
+  background-color: #222;
+  transition: background-color 0.3s ease;
+}
+
+.light.red.on {
+  background-color: red;
+}
+
+.light.green.on {
+  background-color: limegreen;
+}
+
+.countdown-box {
+  background-color: black;
+  color: red;
+  font-size: 32px;
   font-weight: bold;
+  padding: 5px;
+  text-align: center;
+  border-radius: 6px;
 }
 
 #infoBox {
