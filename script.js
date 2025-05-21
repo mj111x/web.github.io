@@ -132,7 +132,7 @@ function handleDeviceMotion(event) {
 }
 
 function connect() {
-  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
+  socket = new WebSocket("wss://https://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/");
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
