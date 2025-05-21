@@ -1,88 +1,58 @@
 body {
-  font-family: 'Arial', sans-serif;
-  background-color: #f4f7fc;
   margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+  font-family: Arial, sans-serif;
+  background-color: #f4f7fc;
 }
 
 .container {
-  flex-grow: 1;
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+}
+
+.signal-box {
   text-align: center;
+  margin-top: 20px;
+}
+
+#signalIcon {
+  width: 100px;
+  height: auto;
+  margin-bottom: 10px;
+}
+
+#countdownText {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+#infoBox {
+  margin-top: 20px;
+  font-size: 16px;
+  padding: 10px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+#resultText {
+  margin-top: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  color: #333;
 }
 
 button {
+  margin-top: 30px;
   padding: 10px 20px;
-  margin: 10px;
-  font-size: 16px;
-  cursor: pointer;
   background-color: #1976d2;
   color: white;
   border: none;
   border-radius: 6px;
+  cursor: pointer;
 }
 
 button:hover {
-  background-color: #1565c0;
-}
-
-#speedInfo, #gpsInfo, #mypageInfo, #crossingResult, #signalCountdown {
-  margin-top: 12px;
-  font-size: 16px;
-  background-color: #ffffff;
-  padding: 12px;
-  border-radius: 5px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
-
-#crossingResult {
-  font-weight: bold;
-  font-size: 18px;
-}
-
-#statusMessage {
-  margin-top: 12px;
-  font-size: 16px;
-  background-color: #fff3cd;
-  color: #333;
-  padding: 12px;
-  border-radius: 6px;
-  line-height: 1.6;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
-}
-
-.radar-container {
-  position: relative;
-  width: 150px;
-  height: 150px;
-  margin: 20px auto;
-}
-
-.radar-wave {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: rgba(76, 175, 80, 0.4);
-  animation: radar-ping 2s infinite ease-out;
-}
-
-.radar-wave.delay {
-  animation-delay: 1s;
-}
-
-@keyframes radar-ping {
-  0% { transform: scale(0.5); opacity: 1; }
-  100% { transform: scale(2); opacity: 0; }
-}
-
-.navbar {
-  display: flex;
-  justify-content: space-around;
-  background-color: #ffffff;
-  border-top: 1px solid #ddd;
-  padding: 10px 0;
+  background-color: #155fa0;
 }
