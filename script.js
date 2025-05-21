@@ -124,7 +124,7 @@ function handleDeviceMotion(event) {
 
   if (Math.abs(accY) > 2.5 && now - lastSpeedUpdateTime > 800) {
     const stepTime = (now - lastSpeedUpdateTime) / 1000;
-    const speed = Math.min(0.45 / stepTime * 3.6, 3);
+    const speed = Math.min(0.45 / stepTime * 3.6, 3); // 속도(m/s)를 km/h로 환산
     lastSpeed = +speed.toFixed(2);
     lastSpeedUpdateTime = now;
     if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
@@ -132,11 +132,16 @@ function handleDeviceMotion(event) {
 }
 
 function connect() {
-  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev:3000/");
+  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/");
+
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
     speak("보행자 시스템에 연결되었습니다.");
+  };
+
+  socket.onerror = (err) => {
+    console.error("❌ WebSocket 연결 실패:", err);
   };
 
   socket.onmessage = (event) => {
@@ -154,7 +159,7 @@ function connect() {
 }
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
-  // 모션 센서 권한 요청
+  // 모션 권한 요청 (iOS Safari 대응)
   if (typeof DeviceMotionEvent?.requestPermission === "function") {
     try {
       const motionPermission = await DeviceMotionEvent.requestPermission();
@@ -168,7 +173,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
     }
   }
 
-  // 위치 권한 요청 및 연결
+  // 위치 권한 요청
   if (!navigator.geolocation) {
     alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
     return;
@@ -181,11 +186,13 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
       document.getElementById("lat").textContent = currentLatitude.toFixed(6);
       document.getElementById("lon").textContent = currentLongitude.toFixed(6);
 
-      // ✅ 권한 허용 후에만 실행
-      connect();
+      // ✅ 권한이 모두 허용된 경우에만 이후 동작
       document.getElementById("requestPermissionButton").style.display = "none";
       document.getElementById("radarAnimation").style.display = "block";
 
+      connect();
+
+      // 위치 지속 추적
       navigator.geolocation.watchPosition(
         (pos) => {
           currentLatitude = pos.coords.latitude;
