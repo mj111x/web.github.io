@@ -19,6 +19,7 @@ let lastSentLon = null;
 let countdownTimer = null;
 let timeLeft = null;
 let signalState = null;
+let lastResult = "";
 
 function updateSignalUI(state, remainingTime) {
   document.getElementById("signalBox").style.display = "block";
@@ -36,13 +37,27 @@ function updateSignalUI(state, remainingTime) {
     greenLight.classList.add("on");
   }
 
-  countdown.textContent = Math.max(0, Math.ceil(remainingTime));
+  countdown.textContent = Math.max(0, Math.floor(remainingTime));
+}
+
+function updateStatusMessage() {
+  let message = "";
+  if (signalState === "green") {
+    message = lastResult.includes("가능")
+      ? `현재 녹색 신호이며, ${Math.floor(timeLeft)}초 남았습니다. 건너가세요.`
+      : `현재 녹색 신호이며, ${Math.floor(timeLeft)}초 남았습니다. 다음 신호를 기다리세요.`;
+  } else {
+    message = `현재 적색신호입니다. 녹색으로 전환까지 ${Math.floor(timeLeft)}초 남았습니다.`;
+  }
+  document.getElementById("resultText").textContent = message;
 }
 
 function updateDisplay(state, remaining, result) {
   signalState = state;
   timeLeft = remaining;
+  lastResult = result;
   updateSignalUI(state, timeLeft);
+  updateStatusMessage();
 
   const avgSpeed = speedSamples.length > 0
     ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
@@ -54,17 +69,6 @@ function updateDisplay(state, remaining, result) {
     `누적 평균 속도: ${avgSpeed} km/h<br>` +
     `위도: ${currentLatitude.toFixed(6)}<br>` +
     `경도: ${currentLongitude.toFixed(6)}`;
-
-  let message = "";
-  if (state === "green") {
-    message = result.includes("가능")
-      ? `현재 녹색 신호이며, ${remaining.toFixed(1)}초 남았습니다. 건너가세요.`
-      : `현재 녹색 신호이며, ${remaining.toFixed(1)}초 남았습니다. 다음 신호를 기다리세요.`;
-  } else {
-    message = `현재 적색신호입니다. 녹색으로 전환까지 ${remaining.toFixed(1)}초 남았습니다.`;
-  }
-
-  document.getElementById("resultText").textContent = message;
 }
 
 function startRealtimeCountdown() {
@@ -73,6 +77,7 @@ function startRealtimeCountdown() {
     if (timeLeft !== null && signalState) {
       timeLeft -= 1;
       updateSignalUI(signalState, timeLeft);
+      updateStatusMessage();
     }
   }, 1000);
 }
