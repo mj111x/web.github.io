@@ -132,7 +132,7 @@ function handleDeviceMotion(event) {
 }
 
 function connect() {
-  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/");
+  socket = new WebSocket("wss://041ba76b-1866-418b-8526-3bb61ab0c719-00-2dvb0ldaplvu2.sisko.replit.dev/");
 
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
@@ -154,12 +154,11 @@ function connect() {
   };
 
   socket.onerror = (err) => {
-    console.error("❌ WebSocket 오류:", err);
+    console.error("❌ WebSocket 연결 실패:", err);
   };
 }
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
-  // 모션 권한 요청
   if (typeof DeviceMotionEvent?.requestPermission === "function") {
     try {
       const permission = await DeviceMotionEvent.requestPermission();
@@ -182,10 +181,11 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
     (pos) => {
       currentLatitude = pos.coords.latitude;
       currentLongitude = pos.coords.longitude;
-      document.getElementById("lat").textContent = currentLatitude.toFixed(6);
-      document.getElementById("lon").textContent = currentLongitude.toFixed(6);
+      const latEl = document.getElementById("lat");
+      const lonEl = document.getElementById("lon");
+      if (latEl) latEl.textContent = currentLatitude.toFixed(6);
+      if (lonEl) lonEl.textContent = currentLongitude.toFixed(6);
 
-      // 권한 모두 허용된 경우에만 실행
       document.getElementById("requestPermissionButton").style.display = "none";
       document.getElementById("radarAnimation").style.display = "block";
 
@@ -195,8 +195,8 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
         (pos) => {
           currentLatitude = pos.coords.latitude;
           currentLongitude = pos.coords.longitude;
-          document.getElementById("lat").textContent = currentLatitude.toFixed(6);
-          document.getElementById("lon").textContent = currentLongitude.toFixed(6);
+          if (latEl) latEl.textContent = currentLatitude.toFixed(6);
+          if (lonEl) lonEl.textContent = currentLongitude.toFixed(6);
         },
         (err) => console.warn("❌ 위치 추적 실패:", err.message),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
