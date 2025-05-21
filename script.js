@@ -23,12 +23,15 @@ let lastSpokenMessage = "";
 let countdownSpoken = false;
 let previousSignalState = null;
 
-// ✅ 음성 출력
+// ✅ 음성 출력 (중복 & 재생 중 방지)
 function speakText(text) {
-  if ('speechSynthesis' in window && lastSpokenMessage !== text) {
+  if (
+    'speechSynthesis' in window &&
+    lastSpokenMessage !== text &&
+    !speechSynthesis.speaking
+  ) {
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ko-KR";
-    speechSynthesis.cancel();
     speechSynthesis.speak(utter);
     lastSpokenMessage = text;
   }
@@ -80,14 +83,12 @@ function updateStatusMessage(state, remaining, result) {
 
   document.getElementById("resultText").textContent = msg;
 
-  // ✅ 신호 상태가 바뀐 경우만 말하기
   if (previousSignalState !== state) {
     speakText(msg);
     previousSignalState = state;
-    countdownSpoken = false; // 새로운 신호마다 카운트다운 리셋
+    countdownSpoken = false;
   }
 
-  // ✅ 매 신호에서 10초 남았을 때 카운트다운 음성 1회만
   if (sec === 10 && !countdownSpoken) {
     countdownSpoken = true;
     for (let i = 10; i >= 1; i--) {
@@ -96,7 +97,7 @@ function updateStatusMessage(state, remaining, result) {
   }
 }
 
-// ✅ 정보 박스
+// ✅ 사용자 정보 표시
 function updateInfoDisplay() {
   const avg = speedSamples.length > 0
     ? Math.floor(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length)
@@ -117,8 +118,6 @@ function connectToServer() {
     startUploadLoop();
     document.getElementById("radarAnimation").style.display = "none";
     document.getElementById("signalBox").style.display = "block";
-
-    // ✅ 연결 직후 안내 음성
     speakText("보행자 지원 시스템에 연결되었습니다. 신호 상태를 분석 중입니다.");
   };
 
@@ -132,7 +131,7 @@ function connectToServer() {
   };
 }
 
-// ✅ 서버로 데이터 전송
+// ✅ 1초마다 서버 전송
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
@@ -141,7 +140,9 @@ function startUploadLoop() {
     const now = Date.now();
     const isStale = now - lastSpeedUpdateTime > 1500;
     const accComponent = isStale ? 0 : lastSpeed;
-    const finalSpeed = +(0.6 * accComponent + 0.4 * gpsSpeed).toFixed(2);
+    let finalSpeed = +(0.6 * accComponent + 0.4 * gpsSpeed).toFixed(2);
+    if (finalSpeed < 0.1) finalSpeed = 0.0;
+
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
@@ -156,7 +157,7 @@ function startUploadLoop() {
   }, 1000);
 }
 
-// ✅ 걷기 감지 (가속도 기반)
+// ✅ 걷기 감지
 function handleDeviceMotion(event) {
   const accY = event.acceleration.y || 0;
   const now = Date.now();
@@ -171,7 +172,7 @@ function handleDeviceMotion(event) {
   }
 }
 
-// ✅ GPS 위치 추적
+// ✅ GPS 속도 보정
 navigator.geolocation.watchPosition(
   (pos) => {
     const lat = pos.coords.latitude;
@@ -194,7 +195,7 @@ navigator.geolocation.watchPosition(
   { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
 );
 
-// ✅ 권한 요청 및 연결
+// ✅ 센서 및 위치 권한 요청
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   try {
     if (typeof DeviceMotionEvent?.requestPermission === "function") {
@@ -228,7 +229,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
   }
 });
 
-// ✅ 하단 버튼 전환
+// ✅ 페이지 전환
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
   document.getElementById("mypage").style.display = "none";
