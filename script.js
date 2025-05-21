@@ -18,8 +18,8 @@ let lastSentLat = null;
 let lastSentLon = null;
 let isEvaluated = false;
 
-const resultDiv = document.getElementById("crossingResult");
-const countdownDiv = document.getElementById("signalCountdown");
+//const resultDiv = document.getElementById("crossingResult");
+//const countdownDiv = document.getElementById("signalCountdown");
 const statusDiv = document.getElementById("statusMessage");
 
 let countdownTimer = null;
@@ -48,14 +48,14 @@ function updateCountdownDisplay(state, time) {
 
   if (state === "🟢 초록불") {
     if (resultDiv.textContent.includes("✅")) {
-      resultDiv.textContent = `🚦 횡단 판단 결과: ✅ 횡단 가능`;
+      resultDiv.textContent = `횡단 판단 결과: 횡단 가능`;
       resultDiv.style.color = "green";
     } else {
-      resultDiv.textContent = `🚦 횡단 판단 결과: ❌ 횡단 불가`;
+      resultDiv.textContent = `횡단 판단 결과: 횡단 불가`;
       resultDiv.style.color = "red";
     }
   } else {
-    resultDiv.textContent = `🚦 횡단 판단 결과: ❌ 횡단 불가`;
+    resultDiv.textContent = `횡단 판단 결과: 횡단 불가`;
     resultDiv.style.color = "red";
   }
 }
@@ -73,11 +73,11 @@ function startSimulatedCountdown(initialState, initialRemainingTime, greenDur, r
     signalRemainingTime -= 1;
 
     if (signalRemainingTime <= 0) {
-      if (signalState === "🟢 초록불") {
-        signalState = "🔴 빨간불";
+      if (signalState === " 초록불") {
+        signalState = " 빨간불";
         signalRemainingTime = redDuration;
       } else {
-        signalState = "🟢 초록불";
+        signalState = " 초록불";
         signalRemainingTime = greenDuration;
       }
     }
@@ -130,7 +130,7 @@ function startTracking() {
       document.getElementById("lat").textContent = currentLatitude.toFixed(6);
       document.getElementById("lon").textContent = currentLongitude.toFixed(6);
     },
-    (err) => console.warn("❌ 위치 추적 실패:", err.message),
+    (err) => console.warn(" 위치 추적 실패:", err.message),
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 
@@ -177,17 +177,17 @@ function connectToServer() {
         isEvaluated = true;
 
         if (data.result.includes("가능")) {
-          resultDiv.textContent = `🚦 횡단 판단 결과: ✅ 횡단 가능`;
+          resultDiv.textContent = `횡단 판단 결과: 횡단 가능`;
           resultDiv.style.color = "green";
         } else {
-          resultDiv.textContent = `🚦 횡단 판단 결과: ❌ 횡단 불가`;
+          resultDiv.textContent = ` 횡단 판단 결과: 횡단 불가`;
           resultDiv.style.color = "red";
         }
 
         startSimulatedCountdown(data.signalState, data.remainingGreenTime, 30, 60);
       }
     } catch (e) {
-      console.warn("❌ 메시지 처리 오류:", e);
+      console.warn(" 메시지 처리 오류:", e);
     }
   };
 
