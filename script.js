@@ -6,7 +6,7 @@ let lastSpeedUpdateTime = 0;
 let speedSamples = [];
 
 const userId = "20250001";
-const SPEED_CUTOFF = 0.3; // km/h 이하 → 0 간주
+const SPEED_CUTOFF = 0.3;
 let previousSignal = null;
 let signalRemainingTime = 0;
 let signalState = "red";
@@ -124,7 +124,7 @@ function handleDeviceMotion(event) {
 
   if (Math.abs(accY) > 2.5 && now - lastSpeedUpdateTime > 800) {
     const stepTime = (now - lastSpeedUpdateTime) / 1000;
-    const speed = Math.min(0.45 / stepTime * 3.6, 3); // 속도(m/s)를 km/h로 환산
+    const speed = Math.min(0.45 / stepTime * 3.6, 3);
     lastSpeed = +speed.toFixed(2);
     lastSpeedUpdateTime = now;
     if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
@@ -140,10 +140,6 @@ function connect() {
     speak("보행자 시스템에 연결되었습니다.");
   };
 
-  socket.onerror = (err) => {
-    console.error("❌ WebSocket 연결 실패:", err);
-  };
-
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
     if (data.type === "crossing_result" && data.webUserId === userId) {
@@ -156,14 +152,18 @@ function connect() {
       startCountdown();
     }
   };
+
+  socket.onerror = (err) => {
+    console.error("❌ WebSocket 오류:", err);
+  };
 }
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
-  // 모션 권한 요청 (iOS Safari 대응)
+  // 모션 권한 요청
   if (typeof DeviceMotionEvent?.requestPermission === "function") {
     try {
-      const motionPermission = await DeviceMotionEvent.requestPermission();
-      if (motionPermission !== "granted") {
+      const permission = await DeviceMotionEvent.requestPermission();
+      if (permission !== "granted") {
         alert("센서 권한이 필요합니다.");
         return;
       }
@@ -173,7 +173,6 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
     }
   }
 
-  // 위치 권한 요청
   if (!navigator.geolocation) {
     alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
     return;
@@ -186,13 +185,12 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
       document.getElementById("lat").textContent = currentLatitude.toFixed(6);
       document.getElementById("lon").textContent = currentLongitude.toFixed(6);
 
-      // ✅ 권한이 모두 허용된 경우에만 이후 동작
+      // 권한 모두 허용된 경우에만 실행
       document.getElementById("requestPermissionButton").style.display = "none";
       document.getElementById("radarAnimation").style.display = "block";
 
       connect();
 
-      // 위치 지속 추적
       navigator.geolocation.watchPosition(
         (pos) => {
           currentLatitude = pos.coords.latitude;
