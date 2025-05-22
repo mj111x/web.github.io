@@ -57,6 +57,42 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+function handleDeviceMotion(event) {
+  const accY = event.acceleration.y || 0;
+  const now = Date.now();
+  if (Math.abs(accY) > 3.5 && now - lastSpeedUpdateTime > 1500) {
+    const stepTime = (now - lastSpeedUpdateTime) / 1000;
+    const rawSpeed = 0.45 / stepTime * 3.6;
+    accelSpeed = rawSpeed >= SPEED_CUTOFF ? Math.min(rawSpeed, 3) : 0;
+    lastSpeedUpdateTime = now;
+  }
+}
+
+function startUploadLoop() {
+  setInterval(() => {
+    if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
+
+    const rawSpeed = gpsSpeed >= SPEED_CUTOFF ? gpsSpeed : accelSpeed;
+    lastSpeed = rawSpeed >= SPEED_CUTOFF ? rawSpeed : 0;
+    if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
+
+    const avgSpeed = speedSamples.length > 0
+      ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
+      : 0.0;
+
+    socket.send(JSON.stringify({
+      type: "web_data",
+      id: userId,
+      speed: lastSpeed,
+      averageSpeed: avgSpeed,
+      location: {
+        latitude: +currentLatitude.toFixed(6),
+        longitude: +currentLongitude.toFixed(6)
+      }
+    }));
+  }, 1000);
+}
+
 function getSignalStateByClock() {
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const seconds = (now.getMinutes() * 60 + now.getSeconds()) % (greenDuration + redDuration);
