@@ -95,7 +95,7 @@ function updateMent() {
   }
 
   if (sec === 12 && !twelveSecondAnnounced) {
-    speak(signalState === "red" ? "곧 녹색 신호로 전환됩니다. 12초 남았습니다." : "곧 적색 신호로 전환됩니다. 12초 남았습니다.");
+    speak(signalState === "red" ? "녹색 신호로 전환됩니다." : "적색 신호로 전환됩니다.");
     twelveSecondAnnounced = true;
   }
   if (sec !== 12) twelveSecondAnnounced = false;
