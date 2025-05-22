@@ -69,7 +69,7 @@ function updateMent() {
 
   if (signalState === "red") {
     message = `현재 적색신호\n 신호 전환까지 ${sec}초 남았습니다.`;
-    spoken = `현재 적색신호 신호 전환까지 ${sec}초 남았습니다.`;
+    spoken = `현재 적색신호\n 신호 전환까지 ${sec}초 남았습니다.`;
   } else {
     message = `현재 녹색신호, ${sec}초 남았습니다.`;
     spoken = `현재 녹색신호, ${sec}초 남았습니다.`;
