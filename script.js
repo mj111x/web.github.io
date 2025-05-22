@@ -22,13 +22,16 @@ let alreadyAnnouncedChange = false;
 let initialSpoken = false;
 let initialMessageSpoken = false;
 let lastCountdownSecond = null;
+let isSpeaking = false;
 
 function speak(text) {
-  if ('speechSynthesis' in window && text !== lastSpoken) {
+  if ('speechSynthesis' in window && text !== lastSpoken && !isSpeaking) {
+    isSpeaking = true;
     const synth = window.speechSynthesis;
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ko-KR";
     utter.rate = 1.1;
+    utter.onend = () => { isSpeaking = false; };
     synth.cancel();
     setTimeout(() => synth.speak(utter), 100);
     lastSpoken = text;
@@ -82,22 +85,20 @@ function updateMent() {
 
   messageEl.innerText = message;
 
-  // 최초 연결 시 한 번만 멘트 출력
-  if (justConnected && !initialMessageSpoken) {
+  if (justConnected && !initialMessageSpoken && !isSpeaking) {
     speak(spoken);
     initialMessageSpoken = true;
     initialSpoken = true;
-    justConnected = false;
     previousSignal = signalState;
     alreadyAnnouncedChange = true;
     twelveSecondAnnounced = (sec <= 12);
     lastCountdownSecond = sec <= 10 ? sec : null;
+    justConnected = false;
     return;
   }
 
-  if (!initialSpoken) return;
+  if (!initialSpoken || isSpeaking) return;
 
-  // 신호 변경 멘트
   if (signalState !== previousSignal && !alreadyAnnouncedChange) {
     speak(signalState === "green"
       ? "녹색 신호로 변경되었습니다. 건너가십시오."
@@ -107,24 +108,25 @@ function updateMent() {
     previousSignal = signalState;
     twelveSecondAnnounced = false;
     lastCountdownSecond = null;
+    return;
   }
 
-  // 12초 멘트
   if (sec === 12 && !twelveSecondAnnounced) {
     speak(signalState === "red"
-      ? "곧 녹색 신호로 전환됩니다."
-      : "곧 적색 신호로 전환됩니다."
+      ? "곧 녹색 신호로 전환됩니다. 12초 남았습니다."
+      : "곧 적색 신호로 전환됩니다. 12초 남았습니다."
     );
     twelveSecondAnnounced = true;
+    return;
   }
 
-  // 카운트다운 멘트
-  if (sec <= 10) {
-    if (lastCountdownSecond !== sec) {
-      speak(`${sec}초`);
-      lastCountdownSecond = sec;
-    }
-  } else {
+  if (sec <= 10 && lastCountdownSecond !== sec) {
+    speak(`${sec}초`);
+    lastCountdownSecond = sec;
+    return;
+  }
+
+  if (sec > 10) {
     lastCountdownSecond = null;
   }
 }
