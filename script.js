@@ -1,5 +1,3 @@
-// 전체 GPS + 가속도 기반 걸음 속도 측정 반영된 script.js 전체 코드 (단위 m/s로 GPS 출력)
-
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -8,7 +6,8 @@ let lastSpeedUpdateTime = 0;
 let speedSamples = [];
 
 const userId = "20250001";
-const SPEED_CUTOFF = 0.3; // km/h 기준 속도 컷오프
+const SPEED_CUTOFF_KMH = 0.3;
+const SPEED_CUTOFF_MS = SPEED_CUTOFF_KMH / 3.6; // 약 0.083 m/s
 let signalRemainingTime = 0;
 let signalState = "red";
 let allowedTime = 999;
@@ -63,7 +62,7 @@ function handleDeviceMotion(event) {
   if (Math.abs(accY) > 2.5 && now - lastSpeedUpdateTime > 1000) {
     const stepTime = (now - lastSpeedUpdateTime) / 1000;
     const rawSpeed = 0.45 / stepTime; // m/s
-    accelSpeed = rawSpeed >= (SPEED_CUTOFF / 3.6) ? Math.min(rawSpeed, 3) : 0;
+    accelSpeed = rawSpeed >= SPEED_CUTOFF_MS ? Math.min(rawSpeed, 3) : 0;
     lastSpeedUpdateTime = now;
   }
 }
@@ -72,9 +71,9 @@ function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
 
-    const rawSpeed = gpsSpeed >= (SPEED_CUTOFF / 3.6) ? gpsSpeed : accelSpeed;
-    lastSpeed = rawSpeed >= (SPEED_CUTOFF / 3.6) ? rawSpeed : 0;
-    if (lastSpeed >= (SPEED_CUTOFF / 3.6)) speedSamples.push(lastSpeed);
+    const rawSpeed = gpsSpeed >= SPEED_CUTOFF_MS ? gpsSpeed : accelSpeed;
+    lastSpeed = rawSpeed >= SPEED_CUTOFF_MS ? rawSpeed : 0;
+    if (lastSpeed >= SPEED_CUTOFF_MS) speedSamples.push(lastSpeed);
 
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
