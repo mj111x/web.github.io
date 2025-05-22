@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (TTS 개선: 멘트 확실히 읽힘)
+// ✅ 웹페이지 script.js (TTS 및 멘트 시각 출력 개선)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -25,7 +25,7 @@ function speak(text) {
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ko-KR";
     synth.cancel();
-    setTimeout(() => synth.speak(utter), 100); // delay TTS to ensure cancel takes effect
+    setTimeout(() => synth.speak(utter), 100);
     lastSpoken = text;
   }
 }
@@ -62,10 +62,11 @@ function updateMent() {
   let spoken = "";
 
   if (signalState === "red") {
-    message = `현재 적색신호입니다. 녹색으로 전환까지 ${sec}초 남았습니다.`;
+    message = `현재 적색신호입니다.`;
+    message += `\n녹색 신호로 전환되기까지 ${sec}초 남았습니다.`;
     spoken = `현재 적색신호입니다. 녹색 신호로 전환되기까지 ${sec}초 남았습니다.`;
   } else {
-    message = `현재 녹색 신호이며, ${sec}초 남았습니다.`;
+    message = `현재 녹색신호이며, ${sec}초 남았습니다.`;
     spoken = `현재 녹색신호이며, ${sec}초 남았습니다.`;
     if (signalRemainingTime >= allowedTime) {
       message += `\n횡단 가능합니다.`;
@@ -76,7 +77,7 @@ function updateMent() {
     }
   }
 
-  messageEl.textContent = message;
+  messageEl.innerText = message; // ✅ 줄바꿈이 적용된 텍스트 표시
 
   if (previousSignal !== signalState || lastSpoken !== spoken) {
     speak(spoken);
