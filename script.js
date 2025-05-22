@@ -1,4 +1,3 @@
-// ✅ 웹페이지 script.js (TTS 개선 최종: 최초 연결, 신호 변경, 12초 예고, 10초 카운트다운)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -29,7 +28,7 @@ function speak(text) {
     const synth = window.speechSynthesis;
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ko-KR";
-    utter.rate = 1.2;
+    utter.rate = 1.1;
     synth.cancel();
     setTimeout(() => synth.speak(utter), 100);
     lastSpoken = text;
@@ -69,7 +68,7 @@ function updateMent() {
   let spoken = "";
 
   if (signalState === "red") {
-    message = `현재 적색신호,\n   신호 전환까지 ${sec}초 남았습니다.`;
+    message = `현재 적색신호,\n 신호 전환까지 ${sec}초 남았습니다.`;
     spoken = `현재 적색신호, 신호 전환까지 ${sec}초 남았습니다.`;
   } else {
     message = `현재 녹색신호,  ${sec}초 남았습니다.`;
@@ -82,37 +81,45 @@ function updateMent() {
       spoken += ` 횡단 불가능합니다.`;
     }
   }
+
   messageEl.innerText = message;
 
-  // 최초 연결 시 멘트만
+  // 최초 연결 시 최초 멘트만 출력
   if (justConnected && !initialSpoken && !initialMessageSpoken) {
     speak(spoken);
     initialMessageSpoken = true;
-    setTimeout(() => { initialSpoken = true; }, 3000);
+    setTimeout(() => {
+      initialSpoken = true;
+      justConnected = false;
+    }, 3000);
     return;
   }
 
   if (!initialSpoken) return;
 
-  if (signalState !== previousSignal && !alreadyAnnouncedChange) {
+  // 신호 변경 멘트 (최초 멘트 이후만)
+  if (signalState !== previousSignal && !alreadyAnnouncedChange && !justConnected) {
     speak(signalState === "green" ? "녹색 신호로 변경되었습니다. 건너가십시오." : "적색 신호로 변경되었습니다.");
-    previousSignal = signalState;
     alreadyAnnouncedChange = true;
+    previousSignal = signalState;
   }
 
+  // 12초 전 예고 멘트
   if (sec === 12 && !twelveSecondAnnounced) {
     speak(signalState === "red" ? "곧 녹색 신호로 전환됩니다. 12초 남았습니다." : "곧 적색 신호로 전환됩니다. 12초 남았습니다.");
     twelveSecondAnnounced = true;
   }
   if (sec !== 12) twelveSecondAnnounced = false;
 
-  if (sec <= 10 && !countdownSpoken && !justConnected) {
-    countdownSpoken = true;
-    for (let i = sec; i >= 1; i--) {
-      setTimeout(() => speak(`${i}초`), (sec - i) * 1000);
+  // 카운트다운 멘트 (10초 이하)
+  if (sec <= 10 && !justConnected) {
+    if (!countdownSpoken || sec === 10) {
+      countdownSpoken = true;
+      speak(`${sec}초`);
     }
+  } else {
+    countdownSpoken = false;
   }
-  if (sec > 10) countdownSpoken = false;
 }
 
 function startCountdown() {
