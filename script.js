@@ -28,6 +28,7 @@ function speak(text) {
     const synth = window.speechSynthesis;
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ko-KR";
+    utter.rate = 1.2; // ✅ 말하는 속도 빠르게 설정
     synth.cancel();
     setTimeout(() => synth.speak(utter), 100);
     lastSpoken = text;
@@ -82,27 +83,23 @@ function updateMent() {
   }
   messageEl.innerText = message;
 
-  // 최초 연결 시 TTS
   if (justConnected && !initialSpoken) {
     speak(spoken);
     initialSpoken = true;
   }
 
-  // 신호 변경 시 멘트
   if (signalState !== previousSignal && !alreadyAnnouncedChange) {
     speak(signalState === "green" ? "녹색 신호로 변경되었습니다. 건너가십시오." : "적색 신호로 변경되었습니다.");
     previousSignal = signalState;
     alreadyAnnouncedChange = true;
   }
 
-  // 13초 예고
-  if (sec === 13 && !twelveSecondAnnounced) {
-    speak(signalState === "red" ? "녹색 신호로 전환됩니다." : "적색 신호로 전환됩니다..");
+  if (sec === 12 && !twelveSecondAnnounced) {
+    speak(signalState === "red" ? "곧 녹색 신호로 전환됩니다. 12초 남았습니다." : "곧 적색 신호로 전환됩니다. 12초 남았습니다.");
     twelveSecondAnnounced = true;
   }
-  if (sec !== 13) twelveSecondAnnounced = false;
+  if (sec !== 12) twelveSecondAnnounced = false;
 
-  // 10초 이하 카운트다운
   if (sec <= 10 && !countdownSpoken) {
     countdownSpoken = true;
     for (let i = sec; i >= 1; i--) {
