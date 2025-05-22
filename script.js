@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (시나리오 기반 최종 개선 버전)
+// ✅ 웹페이지 script.js (신호등 구분 개선 포함 최종)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -27,15 +27,15 @@ function speak(text) {
 }
 
 function updateSignalUI() {
-  document.getElementById("signalBox").style.display = "block";
   const red = document.getElementById("lightRed");
   const green = document.getElementById("lightGreen");
   red.classList.remove("on");
   green.classList.remove("on");
-
-  if (signalState === "red") red.classList.add("on");
-  else green.classList.add("on");
-
+  if (signalState === "green") {
+    green.classList.add("on");
+  } else {
+    red.classList.add("on");
+  }
   document.getElementById("countdownNumber").textContent = Math.max(0, Math.floor(signalRemainingTime));
 }
 
@@ -82,7 +82,6 @@ function startCountdown() {
       signalRemainingTime--;
       updateSignalUI();
       updateMent();
-      console.log("🔁 카운트:", signalRemainingTime, "신호:", signalState);
     } else {
       clearInterval(countdownInterval);
     }
@@ -104,11 +103,9 @@ function updateInfoDisplay() {
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
-
     const now = Date.now();
     const isStale = now - lastSpeedUpdateTime > 1000;
     const finalSpeed = (!isStale && lastSpeed >= SPEED_CUTOFF) ? lastSpeed : 0.0;
-
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
@@ -129,7 +126,6 @@ function startUploadLoop() {
 function handleDeviceMotion(event) {
   const accY = event.acceleration.y || 0;
   const now = Date.now();
-
   if (Math.abs(accY) > 2.5 && now - lastSpeedUpdateTime > 800) {
     const stepTime = (now - lastSpeedUpdateTime) / 1000;
     const speed = Math.min(0.45 / stepTime * 3.6, 3);
@@ -155,10 +151,8 @@ function connect() {
       signalRemainingTime = data.remainingGreenTime;
       signalState = data.signalState;
       allowedTime = data.allowedTime;
-
       document.getElementById("radarAnimation").style.display = "none";
       document.getElementById("signalBox").style.display = "block";
-
       updateSignalUI();
       updateMent();
       updateInfoDisplay();
