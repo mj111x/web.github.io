@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (TTS 개선 포함: 연결 시 음성, 주기 반영, 카운트다운 동기화)
+// ✅ 웹페이지 script.js (TTS 개선: 멘트 확실히 읽힘)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -21,10 +21,11 @@ let redDuration = 30;
 
 function speak(text) {
   if ('speechSynthesis' in window) {
+    const synth = window.speechSynthesis;
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ko-KR";
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(utter);
+    synth.cancel();
+    setTimeout(() => synth.speak(utter), 100); // delay TTS to ensure cancel takes effect
     lastSpoken = text;
   }
 }
