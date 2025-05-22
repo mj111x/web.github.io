@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (신호등 구분 개선 포함 최종)
+// ✅ 웹페이지 script.js (신호등 구분 + 멘트 색상 제거 + 카운트 정확도 개선)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -43,23 +43,18 @@ function updateMent() {
   const messageEl = document.getElementById("resultText");
   const sec = Math.floor(signalRemainingTime);
   let message = "";
-  let color = "black";
 
   if (signalState === "red") {
     message = `현재 적색신호입니다. 녹색으로 전환까지 ${sec}초 남았습니다.`;
-    color = "red";
   } else {
     if (signalRemainingTime >= allowedTime) {
       message = `현재 녹색 신호이며, ${sec}초 남았습니다. 건너가세요.`;
-      color = "green";
     } else {
       message = `현재 녹색 신호이며, ${sec}초 남았습니다. 다음 신호를 기다리세요.`;
-      color = "red";
     }
   }
 
   messageEl.textContent = message;
-  messageEl.style.color = color;
 
   if (previousSignal !== signalState) {
     speak(message);
@@ -78,13 +73,9 @@ function updateMent() {
 function startCountdown() {
   if (countdownInterval) clearInterval(countdownInterval);
   countdownInterval = setInterval(() => {
-    if (signalRemainingTime > 0) {
-      signalRemainingTime--;
-      updateSignalUI();
-      updateMent();
-    } else {
-      clearInterval(countdownInterval);
-    }
+    updateSignalUI();
+    updateMent();
+    signalRemainingTime = Math.max(0, signalRemainingTime - 1);
   }, 1000);
 }
 
