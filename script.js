@@ -62,8 +62,8 @@ function handleDeviceMotion(event) {
   const now = Date.now();
   if (Math.abs(accY) > 3.5 && now - lastSpeedUpdateTime > 1500) {
     const stepTime = (now - lastSpeedUpdateTime) / 1000;
-    const rawSpeed = 0.45 / stepTime * 3.6;
-    accelSpeed = rawSpeed >= SPEED_CUTOFF ? Math.min(rawSpeed, 3) : 0;
+    const rawSpeed = (0.45 / stepTime) / 1000; // km/s
+    accelSpeed = rawSpeed >= SPEED_CUTOFF ? Math.min(rawSpeed, 0.00083) : 0; // 최대 3 km/h
     lastSpeedUpdateTime = now;
   }
 }
@@ -77,7 +77,7 @@ function startUploadLoop() {
     if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
 
     const avgSpeed = speedSamples.length > 0
-      ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
+      ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(6)
       : 0.0;
 
     socket.send(JSON.stringify({
@@ -257,12 +257,12 @@ function connect() {
 
 function updateInfoDisplay() {
   const avg = speedSamples.length > 0
-    ? Math.floor(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length)
+    ? speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length
     : 0;
   document.getElementById("infoBox").style.display = "block";
   document.getElementById("info").innerHTML =
-    `현재 속도: ${Math.floor(lastSpeed)} km/h<br>` +
-    `누적 평균 속도: ${avg} km/h<br>` +
+    `현재 속도: ${lastSpeed.toFixed(6)} km/s<br>` +
+    `누적 평균 속도: ${avg.toFixed(6)} km/s<br>` +
     `위도: ${currentLatitude.toFixed(6)}<br>` +
     `경도: ${currentLongitude.toFixed(6)}`;
 }
