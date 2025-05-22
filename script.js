@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (신호등 주기적 상태 반영 개선 포함)
+// ✅ 웹페이지 script.js (TTS 개선 포함: 연결 시 음성, 주기 반영, 카운트다운 동기화)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -16,14 +16,14 @@ let previousSignal = null;
 let lastSpoken = "";
 let countdownSpoken = false;
 let connected = false;
-let lastSignalTime = 0;
 let greenDuration = 30;
 let redDuration = 30;
 
 function speak(text) {
-  if ('speechSynthesis' in window && text !== lastSpoken) {
+  if ('speechSynthesis' in window) {
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ko-KR";
+    window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utter);
     lastSpoken = text;
   }
@@ -58,29 +58,35 @@ function updateMent() {
   const messageEl = document.getElementById("resultText");
   const sec = Math.floor(signalRemainingTime);
   let message = "";
+  let spoken = "";
 
   if (signalState === "red") {
     message = `현재 적색신호입니다. 녹색으로 전환까지 ${sec}초 남았습니다.`;
+    spoken = `현재 적색신호입니다. 녹색 신호로 전환되기까지 ${sec}초 남았습니다.`;
   } else {
+    message = `현재 녹색 신호이며, ${sec}초 남았습니다.`;
+    spoken = `현재 녹색신호이며, ${sec}초 남았습니다.`;
     if (signalRemainingTime >= allowedTime) {
-      message = `현재 녹색 신호이며, ${sec}초 남았습니다. 건너가세요.`;
+      message += `\n횡단 가능합니다.`;
+      spoken += ` 횡단 가능합니다.`;
     } else {
-      message = `현재 녹색 신호이며, ${sec}초 남았습니다. 다음 신호를 기다리세요.`;
+      message += `\n횡단 불가능합니다.`;
+      spoken += ` 횡단 불가능합니다.`;
     }
   }
 
   messageEl.textContent = message;
 
-  if (previousSignal !== signalState) {
-    speak(message);
+  if (previousSignal !== signalState || lastSpoken !== spoken) {
+    speak(spoken);
     countdownSpoken = false;
     previousSignal = signalState;
   }
 
-  if (sec === 10 && !countdownSpoken) {
+  if (sec <= 10 && !countdownSpoken) {
     countdownSpoken = true;
-    for (let i = 10; i >= 1; i--) {
-      setTimeout(() => speak(`${i}초`), (10 - i) * 1000);
+    for (let i = sec; i >= 1; i--) {
+      setTimeout(() => speak(`${i}초`), (sec - i) * 1000);
     }
   }
 }
