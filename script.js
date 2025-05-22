@@ -1,4 +1,4 @@
-// 전체 GPS + 가속도 기반 걸음 속도 측정 반영된 script.js 전체 코드
+// 전체 GPS + 가속도 기반 걸음 속도 측정 반영된 script.js 전체 코드 (단위 m/s로 GPS 출력)
 
 let socket;
 let currentLatitude = 0;
@@ -8,7 +8,7 @@ let lastSpeedUpdateTime = 0;
 let speedSamples = [];
 
 const userId = "20250001";
-const SPEED_CUTOFF = 0.3;
+const SPEED_CUTOFF = 0.3; // km/h 기준 속도 컷오프
 let signalRemainingTime = 0;
 let signalState = "red";
 let allowedTime = 999;
@@ -60,10 +60,10 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 function handleDeviceMotion(event) {
   const accY = event.acceleration.y || 0;
   const now = Date.now();
-  if (Math.abs(accY) > 3.5 && now - lastSpeedUpdateTime > 1500) {
+  if (Math.abs(accY) > 2.5 && now - lastSpeedUpdateTime > 1000) {
     const stepTime = (now - lastSpeedUpdateTime) / 1000;
-    const rawSpeed = (0.45 / stepTime) / 1000; // km/s
-    accelSpeed = rawSpeed >= SPEED_CUTOFF ? Math.min(rawSpeed, 0.00083) : 0; // 최대 3 km/h
+    const rawSpeed = 0.45 / stepTime; // m/s
+    accelSpeed = rawSpeed >= (SPEED_CUTOFF / 3.6) ? Math.min(rawSpeed, 3) : 0;
     lastSpeedUpdateTime = now;
   }
 }
@@ -72,12 +72,12 @@ function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
 
-    const rawSpeed = gpsSpeed >= SPEED_CUTOFF ? gpsSpeed : accelSpeed;
-    lastSpeed = rawSpeed >= SPEED_CUTOFF ? rawSpeed : 0;
-    if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
+    const rawSpeed = gpsSpeed >= (SPEED_CUTOFF / 3.6) ? gpsSpeed : accelSpeed;
+    lastSpeed = rawSpeed >= (SPEED_CUTOFF / 3.6) ? rawSpeed : 0;
+    if (lastSpeed >= (SPEED_CUTOFF / 3.6)) speedSamples.push(lastSpeed);
 
     const avgSpeed = speedSamples.length > 0
-      ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(6)
+      ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
 
     socket.send(JSON.stringify({
@@ -261,8 +261,8 @@ function updateInfoDisplay() {
     : 0;
   document.getElementById("infoBox").style.display = "block";
   document.getElementById("info").innerHTML =
-    `현재 속도: ${lastSpeed.toFixed(6)} km/s<br>` +
-    `누적 평균 속도: ${avg.toFixed(6)} km/s<br>` +
+    `현재 속도: ${lastSpeed.toFixed(2)} m/s<br>` +
+    `누적 평균 속도: ${avg.toFixed(2)} m/s<br>` +
     `위도: ${currentLatitude.toFixed(6)}<br>` +
     `경도: ${currentLongitude.toFixed(6)}`;
 }
