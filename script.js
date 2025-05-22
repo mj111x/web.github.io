@@ -1,3 +1,4 @@
+// ✅ 웹페이지 script.js (시나리오 기반 최종 개선 버전)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -7,13 +8,14 @@ let speedSamples = [];
 
 const userId = "20250001";
 const SPEED_CUTOFF = 0.3;
-let previousSignal = null;
 let signalRemainingTime = 0;
 let signalState = "red";
 let allowedTime = 999;
 let countdownInterval = null;
+let previousSignal = null;
 let lastSpoken = "";
 let countdownSpoken = false;
+let connected = false;
 
 function speak(text) {
   if ('speechSynthesis' in window && text !== lastSpoken) {
@@ -96,7 +98,8 @@ function updateInfoDisplay() {
 
 function startUploadLoop() {
   setInterval(() => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
+
     const now = Date.now();
     const isStale = now - lastSpeedUpdateTime > 1000;
     const finalSpeed = (!isStale && lastSpeed >= SPEED_CUTOFF) ? lastSpeed : 0.0;
@@ -132,7 +135,7 @@ function handleDeviceMotion(event) {
 }
 
 function connect() {
-  socket = new WebSocket("wss://041ba76b-1866-418b-8526-3bb61ab0c719-00-2dvb0ldaplvu2.sisko.replit.dev/");
+  socket = new WebSocket("wss://c293c87f-5a1d-4c42-a723-309f413d50e0-00-2ozglj5rcnq8t.pike.replit.dev/");
 
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
@@ -143,9 +146,14 @@ function connect() {
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
     if (data.type === "crossing_result" && data.webUserId === userId) {
+      connected = true;
       signalRemainingTime = data.remainingGreenTime;
       signalState = data.signalState;
       allowedTime = data.allowedTime;
+
+      document.getElementById("radarAnimation").style.display = "none";
+      document.getElementById("signalBox").style.display = "block";
+
       updateSignalUI();
       updateMent();
       updateInfoDisplay();
@@ -181,10 +189,8 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
     (pos) => {
       currentLatitude = pos.coords.latitude;
       currentLongitude = pos.coords.longitude;
-      const latEl = document.getElementById("lat");
-      const lonEl = document.getElementById("lon");
-      if (latEl) latEl.textContent = currentLatitude.toFixed(6);
-      if (lonEl) lonEl.textContent = currentLongitude.toFixed(6);
+      document.getElementById("lat").textContent = currentLatitude.toFixed(6);
+      document.getElementById("lon").textContent = currentLongitude.toFixed(6);
 
       document.getElementById("requestPermissionButton").style.display = "none";
       document.getElementById("radarAnimation").style.display = "block";
@@ -195,8 +201,8 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
         (pos) => {
           currentLatitude = pos.coords.latitude;
           currentLongitude = pos.coords.longitude;
-          if (latEl) latEl.textContent = currentLatitude.toFixed(6);
-          if (lonEl) lonEl.textContent = currentLongitude.toFixed(6);
+          document.getElementById("lat").textContent = currentLatitude.toFixed(6);
+          document.getElementById("lon").textContent = currentLongitude.toFixed(6);
         },
         (err) => console.warn("❌ 위치 추적 실패:", err.message),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
