@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (TTS 및 멘트 시각 출력 개선 / KST 기준 주기 반영)
+// ✅ 웹페이지 script.js (TTS 카운트다운/연결 순간 멘트 고정 / KST 기준 주기 반영)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -18,6 +18,7 @@ let countdownSpoken = false;
 let connected = false;
 let greenDuration = 30;
 let redDuration = 30;
+let justConnected = true;
 
 function speak(text) {
   if ('speechSynthesis' in window) {
@@ -62,8 +63,7 @@ function updateMent() {
   let spoken = "";
 
   if (signalState === "red") {
-    message = `현재 적색신호입니다.`;
-    message += `\n녹색 신호로 전환되기까지 ${sec}초 남았습니다.`;
+    message = `현재 적색신호입니다.\n녹색 신호로 전환되기까지 ${sec}초 남았습니다.`;
     spoken = `현재 적색신호입니다. 녹색 신호로 전환되기까지 ${sec}초 남았습니다.`;
   } else {
     message = `현재 녹색신호이며, ${sec}초 남았습니다.`;
@@ -79,10 +79,22 @@ function updateMent() {
 
   messageEl.innerText = message;
 
-  if (previousSignal !== signalState || lastSpoken !== spoken) {
+  // 연결된 순간 1회만 멘트 출력
+  if (justConnected) {
     speak(spoken);
+    lastSpoken = spoken;
+    justConnected = false;
     countdownSpoken = false;
     previousSignal = signalState;
+    return;
+  }
+
+  // 카운트다운 12초 전 멘트 1회
+  if (sec === 12 && !countdownSpoken) {
+    const ttsPre = signalState === "red"
+      ? `곧 녹색 신호로 전환됩니다. 12초 남았습니다.`
+      : `곧 적색 신호로 전환됩니다. 12초 남았습니다.`;
+    speak(ttsPre);
   }
 
   if (sec <= 10 && !countdownSpoken) {
@@ -162,6 +174,7 @@ function connect() {
     const data = JSON.parse(event.data);
     if (data.type === "crossing_result" && data.webUserId === userId) {
       connected = true;
+      justConnected = true;
       allowedTime = data.allowedTime;
       greenDuration = data.greenDuration || greenDuration;
       redDuration = data.redDuration || redDuration;
