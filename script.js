@@ -1,3 +1,5 @@
+// 전체 GPS + 가속도 기반 걸음 속도 측정 반영된 script.js 전체 코드
+
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -24,6 +26,12 @@ let initialMessageSpoken = false;
 let lastCountdownSecond = null;
 let isSpeaking = false;
 
+let lastGPSUpdateTime = 0;
+let lastGPSLatitude = null;
+let lastGPSLongitude = null;
+let gpsSpeed = 0;
+let accelSpeed = 0;
+
 function speak(text) {
   if ('speechSynthesis' in window && text !== lastSpoken && !isSpeaking) {
     isSpeaking = true;
@@ -36,6 +44,17 @@ function speak(text) {
     setTimeout(() => synth.speak(utter), 100);
     lastSpoken = text;
   }
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = deg => deg * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 function getSignalStateByClock() {
@@ -70,10 +89,10 @@ function updateMent() {
 
   if (signalState === "red") {
     message = `현재 적색신호,\n 신호 전환까지 ${sec}초 남았습니다.`;
-    spoken = `현재 적색신호, 신호 전환까지 ${sec}초 남았습니다.`;
+    spoken = `현재 적색신호, 신호 전환까지 ${sec - 2}초 남았습니다.`;
   } else {
     message = `현재 녹색신호,  ${sec}초 남았습니다.`;
-    spoken = `현재 녹색신호,  ${sec}초 남았습니다.`;
+    spoken = `현재 녹색신호,  ${sec - 2}초 남았습니다.`;
     if (signalRemainingTime >= allowedTime) {
       message += `\n횡단 가능합니다.`;
       spoken += ` 횡단 가능합니다.`;
@@ -102,8 +121,7 @@ function updateMent() {
   if (signalState !== previousSignal && !alreadyAnnouncedChange) {
     speak(signalState === "green"
       ? "녹색 신호로 변경되었습니다. 건너가십시오."
-      : "적색 신호로 변경되었습니다."
-    );
+      : "적색 신호로 변경되었습니다.");
     alreadyAnnouncedChange = true;
     previousSignal = signalState;
     twelveSecondAnnounced = false;
@@ -113,9 +131,8 @@ function updateMent() {
 
   if (sec === 12 && !twelveSecondAnnounced) {
     speak(signalState === "red"
-      ? "곧 녹색 신호로 전환됩니다. 12초 남았습니다."
-      : "곧 적색 신호로 전환됩니다. 12초 남았습니다."
-    );
+      ? "녹색 신호로 전환됩니다."
+      : "적색 신호로 전환됩니다.");
     twelveSecondAnnounced = true;
     return;
   }
@@ -126,9 +143,7 @@ function updateMent() {
     return;
   }
 
-  if (sec > 10) {
-    lastCountdownSecond = null;
-  }
+  if (sec > 10) lastCountdownSecond = null;
 }
 
 function startCountdown() {
@@ -140,31 +155,23 @@ function startCountdown() {
   }, 1000);
 }
 
-function updateInfoDisplay() {
-  const avg = speedSamples.length > 0
-    ? Math.floor(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length)
-    : 0;
-  document.getElementById("infoBox").style.display = "block";
-  document.getElementById("info").innerHTML =
-    `현재 속도: ${Math.floor(lastSpeed)} km/h<br>` +
-    `누적 평균 속도: ${avg} km/h<br>` +
-    `위도: ${currentLatitude.toFixed(6)}<br>` +
-    `경도: ${currentLongitude.toFixed(6)}`;
-}
-
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
+
     const now = Date.now();
     const isStale = now - lastSpeedUpdateTime > 1000;
-    const finalSpeed = (!isStale && lastSpeed >= SPEED_CUTOFF) ? lastSpeed : 0.0;
+    lastSpeed = gpsSpeed >= SPEED_CUTOFF ? gpsSpeed : accelSpeed;
+    if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
+
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
+
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
-      speed: finalSpeed,
+      speed: lastSpeed,
       averageSpeed: avgSpeed,
       location: {
         latitude: +currentLatitude.toFixed(6),
@@ -179,10 +186,8 @@ function handleDeviceMotion(event) {
   const now = Date.now();
   if (Math.abs(accY) > 2.5 && now - lastSpeedUpdateTime > 800) {
     const stepTime = (now - lastSpeedUpdateTime) / 1000;
-    const speed = Math.min(0.45 / stepTime * 3.6, 3);
-    lastSpeed = +speed.toFixed(2);
+    accelSpeed = Math.min(0.45 / stepTime * 3.6, 3);
     lastSpeedUpdateTime = now;
-    if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
   }
 }
 
@@ -214,6 +219,18 @@ function connect() {
   };
 }
 
+function updateInfoDisplay() {
+  const avg = speedSamples.length > 0
+    ? Math.floor(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length)
+    : 0;
+  document.getElementById("infoBox").style.display = "block";
+  document.getElementById("info").innerHTML =
+    `현재 속도: ${Math.floor(lastSpeed)} km/h<br>` +
+    `누적 평균 속도: ${avg} km/h<br>` +
+    `위도: ${currentLatitude.toFixed(6)}<br>` +
+    `경도: ${currentLongitude.toFixed(6)}`;
+}
+
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   if (typeof DeviceMotionEvent?.requestPermission === "function") {
     try {
@@ -242,8 +259,19 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
       connect();
       navigator.geolocation.watchPosition(
         (pos) => {
-          currentLatitude = pos.coords.latitude;
-          currentLongitude = pos.coords.longitude;
+          const now = Date.now();
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0) {
+            const dt = (now - lastGPSUpdateTime) / 1000;
+            const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
+            gpsSpeed = d / dt * 3.6;
+          }
+          lastGPSLatitude = lat;
+          lastGPSLongitude = lon;
+          lastGPSUpdateTime = now;
+          currentLatitude = lat;
+          currentLongitude = lon;
           document.getElementById("lat").textContent = currentLatitude.toFixed(6);
           document.getElementById("lon").textContent = currentLongitude.toFixed(6);
         },
