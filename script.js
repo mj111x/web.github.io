@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (신호등 구분 + 멘트 색상 제거 + 카운트 정확도 개선)
+// ✅ 웹페이지 script.js (신호등 주기적 상태 반영 개선 포함)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -16,6 +16,9 @@ let previousSignal = null;
 let lastSpoken = "";
 let countdownSpoken = false;
 let connected = false;
+let lastSignalTime = 0;
+let greenDuration = 30;
+let redDuration = 30;
 
 function speak(text) {
   if ('speechSynthesis' in window && text !== lastSpoken) {
@@ -23,6 +26,18 @@ function speak(text) {
     utter.lang = "ko-KR";
     window.speechSynthesis.speak(utter);
     lastSpoken = text;
+  }
+}
+
+function getSignalStateByClock() {
+  const now = new Date();
+  const seconds = (now.getMinutes() * 60 + now.getSeconds()) % (greenDuration + redDuration);
+  if (seconds < redDuration) {
+    signalState = "red";
+    signalRemainingTime = redDuration - seconds;
+  } else {
+    signalState = "green";
+    signalRemainingTime = greenDuration - (seconds - redDuration);
   }
 }
 
@@ -73,9 +88,9 @@ function updateMent() {
 function startCountdown() {
   if (countdownInterval) clearInterval(countdownInterval);
   countdownInterval = setInterval(() => {
+    getSignalStateByClock();
     updateSignalUI();
     updateMent();
-    signalRemainingTime = Math.max(0, signalRemainingTime - 1);
   }, 1000);
 }
 
@@ -139,15 +154,13 @@ function connect() {
     const data = JSON.parse(event.data);
     if (data.type === "crossing_result" && data.webUserId === userId) {
       connected = true;
-      signalRemainingTime = data.remainingGreenTime;
-      signalState = data.signalState;
       allowedTime = data.allowedTime;
+      greenDuration = data.greenDuration || greenDuration;
+      redDuration = data.redDuration || redDuration;
       document.getElementById("radarAnimation").style.display = "none";
       document.getElementById("signalBox").style.display = "block";
-      updateSignalUI();
-      updateMent();
-      updateInfoDisplay();
       startCountdown();
+      updateInfoDisplay();
     }
   };
 
