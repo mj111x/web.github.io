@@ -19,6 +19,7 @@ let connected = false;
 let greenDuration = 30;
 let redDuration = 30;
 let justConnected = true;
+let lastAnnounceTime = null;
 
 function speak(text) {
   if ('speechSynthesis' in window) {
@@ -82,21 +83,25 @@ function updateMent() {
   // 연결된 순간 1회만 멘트 출력
   if (justConnected) {
     speak(spoken);
-    lastSpoken = spoken;
     justConnected = false;
+    lastAnnounceTime = Date.now();
     countdownSpoken = false;
     previousSignal = signalState;
     return;
   }
 
-  // 카운트다운 12초 전 멘트 1회
-  if (sec === 12 && !countdownSpoken) {
+  const now = Date.now();
+
+  // 카운트다운 12초 전 멘트 (1회)
+  if (sec === 12 && (!lastAnnounceTime || now - lastAnnounceTime > 15000)) {
     const ttsPre = signalState === "red"
       ? `곧 녹색 신호로 전환됩니다. 12초 남았습니다.`
       : `곧 적색 신호로 전환됩니다. 12초 남았습니다.`;
     speak(ttsPre);
+    lastAnnounceTime = now;
   }
 
+  // 10초 이하일 때 카운트다운 음성 출력 (1회)
   if (sec <= 10 && !countdownSpoken) {
     countdownSpoken = true;
     for (let i = sec; i >= 1; i--) {
