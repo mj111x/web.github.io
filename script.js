@@ -78,9 +78,14 @@ function updateMent() {
 function startCountdown() {
   if (countdownInterval) clearInterval(countdownInterval);
   countdownInterval = setInterval(() => {
-    signalRemainingTime--;
-    updateSignalUI();
-    updateMent();
+    if (signalRemainingTime > 0) {
+      signalRemainingTime--;
+      updateSignalUI();
+      updateMent();
+      console.log("🔁 카운트:", signalRemainingTime, "신호:", signalState);
+    } else {
+      clearInterval(countdownInterval);
+    }
   }, 1000);
 }
 
