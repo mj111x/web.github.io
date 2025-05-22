@@ -46,9 +46,7 @@ function getSignalStateByClock() {
     signalState = "green";
     signalRemainingTime = greenDuration - (seconds - redDuration);
   }
-  if (current !== signalState) {
-    alreadyAnnouncedChange = false;
-  }
+  if (current !== signalState) alreadyAnnouncedChange = false;
 }
 
 function updateSignalUI() {
@@ -84,34 +82,45 @@ function updateMent() {
 
   messageEl.innerText = message;
 
-  // 최초 연결 시 최초 멘트만 출력
+  /* ───────── 최초 연결 시 최초 멘트만 ───────── */
   if (justConnected && !initialSpoken && !initialMessageSpoken) {
     speak(spoken);
     initialMessageSpoken = true;
+
+    /* ★ baseline 설정 : 이후 ‘변경 멘트’ 방지 */
+    previousSignal = signalState;          // 현재 신호를 기준값으로
+    alreadyAnnouncedChange = true;         // 방금 멘트 친 걸로 간주
+
     setTimeout(() => {
       initialSpoken = true;
-      justConnected = false;
+      justConnected = false;               // 이제 변경 멘트 허용
     }, 3000);
     return;
   }
-
   if (!initialSpoken) return;
+  /* ──────────────────────────────────────────── */
 
-  // 신호 변경 멘트 (최초 멘트 이후만)
-  if (signalState !== previousSignal && !alreadyAnnouncedChange && !justConnected) {
-    speak(signalState === "green" ? "녹색 신호로 변경되었습니다. 건너가십시오." : "적색 신호로 변경되었습니다.");
+  /* 신호 변경 멘트 (baseline 이후 첫 변경부터) */
+  if (signalState !== previousSignal && !alreadyAnnouncedChange) {
+    speak(signalState === "green"
+      ? "녹색 신호로 변경되었습니다. 건너가십시오."
+      : "적색 신호로 변경되었습니다."
+    );
     alreadyAnnouncedChange = true;
     previousSignal = signalState;
   }
 
-  // 12초 전 예고 멘트
+  /* 12초 예고 */
   if (sec === 12 && !twelveSecondAnnounced) {
-    speak(signalState === "red" ? "곧 녹색 신호로 전환됩니다. 12초 남았습니다." : "곧 적색 신호로 전환됩니다. 12초 남았습니다.");
+    speak(signalState === "red"
+      ? "곧 녹색 신호로 전환됩니다. 12초 남았습니다."
+      : "곧 적색 신호로 전환됩니다. 12초 남았습니다."
+    );
     twelveSecondAnnounced = true;
   }
   if (sec !== 12) twelveSecondAnnounced = false;
 
-  // 카운트다운 멘트 (10초 이하)
+  /* 10초 이하 카운트다운 */
   if (sec <= 10 && !justConnected) {
     if (!countdownSpoken || sec === 10) {
       countdownSpoken = true;
@@ -131,9 +140,11 @@ function startCountdown() {
   }, 1000);
 }
 
+/* ───── 이하 기존 로직 동일 (위치, 속도, WebSocket 등) ───── */
+
 function updateInfoDisplay() {
-  const avg = speedSamples.length > 0
-    ? Math.floor(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length)
+  const avg = speedSamples.length
+    ? Math.floor(speedSamples.reduce((a, b) => a + b) / speedSamples.length)
     : 0;
   document.getElementById("infoBox").style.display = "block";
   document.getElementById("info").innerHTML =
@@ -149,8 +160,8 @@ function startUploadLoop() {
     const now = Date.now();
     const isStale = now - lastSpeedUpdateTime > 1000;
     const finalSpeed = (!isStale && lastSpeed >= SPEED_CUTOFF) ? lastSpeed : 0.0;
-    const avgSpeed = speedSamples.length > 0
-      ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
+    const avgSpeed = speedSamples.length
+      ? +(speedSamples.reduce((a, b) => a + b) / speedSamples.length).toFixed(2)
       : 0.0;
     socket.send(JSON.stringify({
       type: "web_data",
@@ -200,28 +211,19 @@ function connect() {
       updateInfoDisplay();
     }
   };
-  socket.onerror = (err) => {
-    console.error("❌ WebSocket 연결 실패:", err);
-  };
+  socket.onerror = (err) => console.error("❌ WebSocket 연결 실패:", err);
 }
 
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   if (typeof DeviceMotionEvent?.requestPermission === "function") {
     try {
-      const permission = await DeviceMotionEvent.requestPermission();
-      if (permission !== "granted") {
-        alert("센서 권한이 필요합니다.");
-        return;
+      if (await DeviceMotionEvent.requestPermission() !== "granted") {
+        alert("센서 권한이 필요합니다."); return;
       }
-    } catch {
-      alert("센서 권한 요청 실패");
-      return;
-    }
+    } catch { alert("센서 권한 요청 실패"); return; }
   }
-  if (!navigator.geolocation) {
-    alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
-    return;
-  }
+  if (!navigator.geolocation) { alert("이 브라우저는 위치 정보를 지원하지 않습니다."); return; }
+
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       currentLatitude = pos.coords.latitude;
@@ -231,6 +233,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
       document.getElementById("requestPermissionButton").style.display = "none";
       document.getElementById("radarAnimation").style.display = "block";
       connect();
+
       navigator.geolocation.watchPosition(
         (pos) => {
           currentLatitude = pos.coords.latitude;
@@ -243,10 +246,7 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
       );
       window.addEventListener("devicemotion", handleDeviceMotion, true);
     },
-    (err) => {
-      alert("위치 권한이 필요합니다.");
-      console.warn("위치 권한 거부:", err.message);
-    },
+    (err) => { alert("위치 권한이 필요합니다."); console.warn("위치 권한 거부:", err.message); },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 });
