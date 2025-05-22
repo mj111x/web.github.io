@@ -28,7 +28,7 @@ function speak(text) {
     const synth = window.speechSynthesis;
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ko-KR";
-    utter.rate = 1.2; // ✅ 말하는 속도 빠르게 설정
+    utter.rate = 1.1; // ✅ 말하는 속도 빠르게 설정
     synth.cancel();
     setTimeout(() => synth.speak(utter), 100);
     lastSpoken = text;
@@ -68,11 +68,11 @@ function updateMent() {
   let spoken = "";
 
   if (signalState === "red") {
-    message = `현재 적색신호입니다.\n녹색 신호로 전환되기까지 ${sec}초 남았습니다.`;
-    spoken = `현재 적색신호입니다. 녹색 신호로 전환되기까지 ${sec}초 남았습니다.`;
+    message = `현재 적색신호\n 신호 전환까지 ${sec}초 남았습니다.`;
+    spoken = `현재 적색신호 신호 전환까지 ${sec}초 남았습니다.`;
   } else {
-    message = `현재 녹색신호이며, ${sec}초 남았습니다.`;
-    spoken = `현재 녹색신호이며, ${sec}초 남았습니다.`;
+    message = `현재 녹색신호, ${sec}초 남았습니다.`;
+    spoken = `현재 녹색신호, ${sec}초 남았습니다.`;
     if (signalRemainingTime >= allowedTime) {
       message += `\n횡단 가능합니다.`;
       spoken += ` 횡단 가능합니다.`;
