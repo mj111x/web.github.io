@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (TTS 멘트: 연결 순간 1회, 12초 예고 반복, 10초 이하 카운트다운 반복)
+// ✅ 웹페이지 script.js (TTS 멘트: 연결 순간 1회, 12초 예고 반복, 10초 이하 카운트다운 반복, 신호 변경 시 멘트)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -20,6 +20,7 @@ let greenDuration = 30;
 let redDuration = 30;
 let justConnected = true;
 let twelveSecondAnnounced = false;
+let lastSignalChange = null;
 
 function speak(text) {
   if ('speechSynthesis' in window) {
@@ -35,12 +36,19 @@ function speak(text) {
 function getSignalStateByClock() {
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000); // ✅ KST 기준
   const seconds = (now.getMinutes() * 60 + now.getSeconds()) % (greenDuration + redDuration);
+  const current = signalState;
   if (seconds < redDuration) {
     signalState = "red";
     signalRemainingTime = redDuration - seconds;
   } else {
     signalState = "green";
     signalRemainingTime = greenDuration - (seconds - redDuration);
+  }
+
+  if (current !== signalState) {
+    lastSignalChange = Date.now();
+    if (signalState === "green") speak("녹색 신호로 변경되었습니다. 건너가십시오.");
+    else speak("적색 신호로 변경되었습니다.");
   }
 }
 
@@ -80,7 +88,6 @@ function updateMent() {
 
   messageEl.innerText = message;
 
-  // 연결된 순간 1회 멘트 출력
   if (justConnected) {
     if (signalRemainingTime <= 10) speak(spoken);
     justConnected = false;
@@ -90,7 +97,6 @@ function updateMent() {
     return;
   }
 
-  // 매 주기마다 12초 예고 멘트
   if (sec === 12 && !twelveSecondAnnounced) {
     const ttsPre = signalState === "red"
       ? `곧 녹색 신호로 전환됩니다. 12초 남았습니다.`
@@ -101,7 +107,6 @@ function updateMent() {
 
   if (sec !== 12) twelveSecondAnnounced = false;
 
-  // 10초 이하 카운트다운 반복
   if (sec <= 10 && !countdownSpoken) {
     countdownSpoken = true;
     for (let i = sec; i >= 1; i--) {
