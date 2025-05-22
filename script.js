@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (TTS 및 멘트 시각 출력 개선)
+// ✅ 웹페이지 script.js (TTS 및 멘트 시각 출력 개선 / KST 기준 주기 반영)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -31,7 +31,7 @@ function speak(text) {
 }
 
 function getSignalStateByClock() {
-  const now = new Date();
+  const now = new Date(Date.now() + 9 * 60 * 60 * 1000); // ✅ KST 기준
   const seconds = (now.getMinutes() * 60 + now.getSeconds()) % (greenDuration + redDuration);
   if (seconds < redDuration) {
     signalState = "red";
@@ -77,7 +77,7 @@ function updateMent() {
     }
   }
 
-  messageEl.innerText = message; // ✅ 줄바꿈이 적용된 텍스트 표시
+  messageEl.innerText = message;
 
   if (previousSignal !== signalState || lastSpoken !== spoken) {
     speak(spoken);
