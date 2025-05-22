@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (TTS 멘트 개선: 연결 순간 1회, 12초 예고 반복, 10초 이하 카운트다운 반복, 신호 변경 시 멘트)
+// ✅ 웹페이지 script.js (TTS 개선 최종: 최초 연결, 신호 변경, 12초 예고, 10초 카운트다운)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -21,9 +21,10 @@ let redDuration = 30;
 let justConnected = true;
 let twelveSecondAnnounced = false;
 let alreadyAnnouncedChange = false;
+let connectionSpoken = false;
 
 function speak(text) {
-  if ('speechSynthesis' in window) {
+  if ('speechSynthesis' in window && text !== lastSpoken) {
     const synth = window.speechSynthesis;
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ko-KR";
@@ -44,7 +45,6 @@ function getSignalStateByClock() {
     signalState = "green";
     signalRemainingTime = greenDuration - (seconds - redDuration);
   }
-
   if (current !== signalState) {
     alreadyAnnouncedChange = false;
   }
@@ -55,11 +55,8 @@ function updateSignalUI() {
   const green = document.getElementById("lightGreen");
   red.classList.remove("on");
   green.classList.remove("on");
-  if (signalState === "green") {
-    green.classList.add("on");
-  } else {
-    red.classList.add("on");
-  }
+  if (signalState === "green") green.classList.add("on");
+  else red.classList.add("on");
   document.getElementById("countdownNumber").textContent = Math.max(0, Math.floor(signalRemainingTime));
 }
 
@@ -83,39 +80,29 @@ function updateMent() {
       spoken += ` 횡단 불가능합니다.`;
     }
   }
-
   messageEl.innerText = message;
 
-  // 연결 시점 단 한 번 멘트
-  if (justConnected) {
-    if (signalRemainingTime <= 10) speak(spoken);
-    justConnected = false;
-    countdownSpoken = false;
-    twelveSecondAnnounced = false;
-    alreadyAnnouncedChange = true;
-    previousSignal = signalState;
-    return;
+  // 최초 연결 시 10초 이내면 카운트다운만, 아니면 멘트 읽기
+  if (justConnected && !connectionSpoken) {
+    if (sec > 10) speak(spoken);
+    connectionSpoken = true;
   }
 
-  // 신호 변경 직후 멘트
+  // 신호 변경시 멘트
   if (signalState !== previousSignal && !alreadyAnnouncedChange) {
-    if (signalState === "green") speak("녹색 신호로 변경되었습니다. 건너가십시오.");
-    else speak("적색 신호로 변경되었습니다.");
+    speak(signalState === "green" ? "녹색 신호로 변경되었습니다. 건너가십시오." : "적색 신호로 변경되었습니다.");
     previousSignal = signalState;
     alreadyAnnouncedChange = true;
   }
 
-  // 12초 남았을 때 매 주기 안내
+  // 12초 멘트 (반복 허용)
   if (sec === 12 && !twelveSecondAnnounced) {
-    const ttsPre = signalState === "red"
-      ? `곧 녹색 신호로 전환됩니다. 12초 남았습니다.`
-      : `곧 적색 신호로 전환됩니다. 12초 남았습니다.`;
-    speak(ttsPre);
+    speak(signalState === "red" ? "곧 녹색 신호로 전환됩니다. 12초 남았습니다." : "곧 적색 신호로 전환됩니다. 12초 남았습니다.");
     twelveSecondAnnounced = true;
   }
-
   if (sec !== 12) twelveSecondAnnounced = false;
 
+  // 10초 이하 카운트다운
   if (sec <= 10 && !countdownSpoken) {
     countdownSpoken = true;
     for (let i = sec; i >= 1; i--) {
@@ -155,7 +142,6 @@ function startUploadLoop() {
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
-
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
@@ -183,18 +169,17 @@ function handleDeviceMotion(event) {
 
 function connect() {
   socket = new WebSocket("wss://041ba76b-1866-418b-8526-3bb61ab0c719-00-2dvb0ldaplvu2.sisko.replit.dev/");
-
   socket.onopen = () => {
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
     speak("보행자 시스템에 연결되었습니다.");
   };
-
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
     if (data.type === "crossing_result" && data.webUserId === userId) {
       connected = true;
       justConnected = true;
+      connectionSpoken = false;
       allowedTime = data.allowedTime;
       greenDuration = data.greenDuration || greenDuration;
       redDuration = data.redDuration || redDuration;
@@ -204,7 +189,6 @@ function connect() {
       updateInfoDisplay();
     }
   };
-
   socket.onerror = (err) => {
     console.error("❌ WebSocket 연결 실패:", err);
   };
@@ -223,24 +207,19 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
       return;
     }
   }
-
   if (!navigator.geolocation) {
     alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
     return;
   }
-
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       currentLatitude = pos.coords.latitude;
       currentLongitude = pos.coords.longitude;
       document.getElementById("lat").textContent = currentLatitude.toFixed(6);
       document.getElementById("lon").textContent = currentLongitude.toFixed(6);
-
       document.getElementById("requestPermissionButton").style.display = "none";
       document.getElementById("radarAnimation").style.display = "block";
-
       connect();
-
       navigator.geolocation.watchPosition(
         (pos) => {
           currentLatitude = pos.coords.latitude;
@@ -251,7 +230,6 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
         (err) => console.warn("❌ 위치 추적 실패:", err.message),
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
-
       window.addEventListener("devicemotion", handleDeviceMotion, true);
     },
     (err) => {
