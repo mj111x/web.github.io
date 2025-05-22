@@ -21,7 +21,6 @@ let redDuration = 30;
 let justConnected = true;
 let twelveSecondAnnounced = false;
 let alreadyAnnouncedChange = false;
-let connectionSpoken = false;
 let initialSpoken = false;
 
 function speak(text) {
@@ -85,12 +84,7 @@ function updateMent() {
 
   // 최초 연결 시 TTS
   if (justConnected && !initialSpoken) {
-    if (sec > 10) {
-      speak(spoken);
-    } else {
-      // 10초 이하일 경우에도 카운트다운만 아니라 최초 멘트 읽기
-      speak(spoken);
-    }
+    speak(spoken);
     initialSpoken = true;
   }
 
@@ -101,14 +95,14 @@ function updateMent() {
     alreadyAnnouncedChange = true;
   }
 
-  // 12초 전 멘트 반복
-  if (sec === 12 && !twelveSecondAnnounced) {
-    speak(signalState === "red" ? "녹색 신호로 전환됩니다." : "적색 신호로 전환됩니다.");
+  // 13초 예고
+  if (sec === 13 && !twelveSecondAnnounced) {
+    speak(signalState === "red" ? "녹색 신호로 전환됩니다." : "적색 신호로 전환됩니다..");
     twelveSecondAnnounced = true;
   }
-  if (sec !== 12) twelveSecondAnnounced = false;
+  if (sec !== 13) twelveSecondAnnounced = false;
 
-  // 10초 이하 카운트다운 반복
+  // 10초 이하 카운트다운
   if (sec <= 10 && !countdownSpoken) {
     countdownSpoken = true;
     for (let i = sec; i >= 1; i--) {
