@@ -72,9 +72,9 @@ function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
 
-    const rawSpeed = gpsSpeed >= (SPEED_CUTOFF / 3.6) ? gpsSpeed : accelSpeed;
-    lastSpeed = rawSpeed >= (SPEED_CUTOFF / 3.6) ? rawSpeed : 0;
-    if (lastSpeed >= (SPEED_CUTOFF / 3.6)) speedSamples.push(lastSpeed);
+    const rawSpeed = gpsSpeed > accelSpeed ? gpsSpeed : accelSpeed;
+    lastSpeed = rawSpeed;
+    if (lastSpeed >= SPEED_CUTOFF_MS) speedSamples.push(lastSpeed);
 
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
@@ -83,8 +83,8 @@ function startUploadLoop() {
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
-      speed: lastSpeed,
-      averageSpeed: avgSpeed,
+      speed: lastSpeed >= SPEED_CUTOFF_MS ? lastSpeed : 0,
+      averageSpeed: avgSpeed >= SPEED_CUTOFF_MS ? avgSpeed : 0,
       location: {
         latitude: +currentLatitude.toFixed(6),
         longitude: +currentLongitude.toFixed(6)
@@ -261,8 +261,8 @@ function updateInfoDisplay() {
     : 0;
   document.getElementById("infoBox").style.display = "block";
   document.getElementById("info").innerHTML =
-    `현재 속도: ${lastSpeed.toFixed(6)} km/s<br>` +
-    `누적 평균 속도: ${avg.toFixed(6)} km/s<br>` +
+    `현재 속도: ${(lastSpeed >= SPEED_CUTOFF_MS ? lastSpeed : 0).toFixed(2)} m/s<br>` +
+    `누적 평균 속도: ${(avg >= SPEED_CUTOFF_MS ? avg : 0).toFixed(2)} m/s<br>` +
     `위도: ${currentLatitude.toFixed(6)}<br>` +
     `경도: ${currentLongitude.toFixed(6)}`;
 }
