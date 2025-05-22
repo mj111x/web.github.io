@@ -22,13 +22,14 @@ let justConnected = true;
 let twelveSecondAnnounced = false;
 let alreadyAnnouncedChange = false;
 let initialSpoken = false;
+let initialMessageSpoken = false;
 
 function speak(text) {
   if ('speechSynthesis' in window && text !== lastSpoken) {
     const synth = window.speechSynthesis;
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = "ko-KR";
-    utter.rate = 1.1; // ✅ 말하는 속도 빠르게 설정
+    utter.rate = 1.2;
     synth.cancel();
     setTimeout(() => synth.speak(utter), 100);
     lastSpoken = text;
@@ -36,7 +37,7 @@ function speak(text) {
 }
 
 function getSignalStateByClock() {
-  const now = new Date(Date.now() + 9 * 60 * 60 * 1000); // ✅ KST 기준
+  const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
   const seconds = (now.getMinutes() * 60 + now.getSeconds()) % (greenDuration + redDuration);
   const current = signalState;
   if (seconds < redDuration) {
@@ -68,11 +69,11 @@ function updateMent() {
   let spoken = "";
 
   if (signalState === "red") {
-    message = `현재 적색신호\n 신호 전환까지 ${sec}초 남았습니다.`;
-    spoken = `현재 적색신호\n 신호 전환까지 ${sec}초 남았습니다.`;
+    message = `현재 적색신호,\n   신호 전환까지 ${sec}초 남았습니다.`;
+    spoken = `현재 적색신호, 신호 전환까지 ${sec}초 남았습니다.`;
   } else {
-    message = `현재 녹색신호, ${sec}초 남았습니다.`;
-    spoken = `현재 녹색신호, ${sec}초 남았습니다.`;
+    message = `현재 녹색신호,  ${sec}초 남았습니다.`;
+    spoken = `현재 녹색신호,  ${sec}초 남았습니다.`;
     if (signalRemainingTime >= allowedTime) {
       message += `\n횡단 가능합니다.`;
       spoken += ` 횡단 가능합니다.`;
@@ -83,10 +84,15 @@ function updateMent() {
   }
   messageEl.innerText = message;
 
-  if (justConnected && !initialSpoken) {
+  // 최초 연결 시 멘트만
+  if (justConnected && !initialSpoken && !initialMessageSpoken) {
     speak(spoken);
-    initialSpoken = true;
+    initialMessageSpoken = true;
+    setTimeout(() => { initialSpoken = true; }, 3000);
+    return;
   }
+
+  if (!initialSpoken) return;
 
   if (signalState !== previousSignal && !alreadyAnnouncedChange) {
     speak(signalState === "green" ? "녹색 신호로 변경되었습니다. 건너가십시오." : "적색 신호로 변경되었습니다.");
@@ -95,12 +101,12 @@ function updateMent() {
   }
 
   if (sec === 12 && !twelveSecondAnnounced) {
-    speak(signalState === "red" ? "녹색 신호로 전환됩니다." : "적색 신호로 전환됩니다.");
+    speak(signalState === "red" ? "곧 녹색 신호로 전환됩니다. 12초 남았습니다." : "곧 적색 신호로 전환됩니다. 12초 남았습니다.");
     twelveSecondAnnounced = true;
   }
   if (sec !== 12) twelveSecondAnnounced = false;
 
-  if (sec <= 10 && !countdownSpoken) {
+  if (sec <= 10 && !countdownSpoken && !justConnected) {
     countdownSpoken = true;
     for (let i = sec; i >= 1; i--) {
       setTimeout(() => speak(`${i}초`), (sec - i) * 1000);
@@ -177,6 +183,7 @@ function connect() {
       connected = true;
       justConnected = true;
       initialSpoken = false;
+      initialMessageSpoken = false;
       allowedTime = data.allowedTime;
       greenDuration = data.greenDuration || greenDuration;
       redDuration = data.redDuration || redDuration;
