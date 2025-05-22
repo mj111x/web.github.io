@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (TTS 멘트: 연결 순간 1회, 12초 예고 반복, 10초 이하 카운트다운 반복, 신호 변경 시 멘트)
+// ✅ 웹페이지 script.js (TTS 멘트 개선: 연결 순간 1회, 12초 예고 반복, 10초 이하 카운트다운 반복, 신호 변경 시 멘트)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -20,7 +20,7 @@ let greenDuration = 30;
 let redDuration = 30;
 let justConnected = true;
 let twelveSecondAnnounced = false;
-let lastSignalChange = null;
+let alreadyAnnouncedChange = false;
 
 function speak(text) {
   if ('speechSynthesis' in window) {
@@ -46,9 +46,7 @@ function getSignalStateByClock() {
   }
 
   if (current !== signalState) {
-    lastSignalChange = Date.now();
-    if (signalState === "green") speak("녹색 신호로 변경되었습니다. 건너가십시오.");
-    else speak("적색 신호로 변경되었습니다.");
+    alreadyAnnouncedChange = false;
   }
 }
 
@@ -88,15 +86,26 @@ function updateMent() {
 
   messageEl.innerText = message;
 
+  // 연결 시점 단 한 번 멘트
   if (justConnected) {
     if (signalRemainingTime <= 10) speak(spoken);
     justConnected = false;
     countdownSpoken = false;
     twelveSecondAnnounced = false;
+    alreadyAnnouncedChange = true;
     previousSignal = signalState;
     return;
   }
 
+  // 신호 변경 직후 멘트
+  if (signalState !== previousSignal && !alreadyAnnouncedChange) {
+    if (signalState === "green") speak("녹색 신호로 변경되었습니다. 건너가십시오.");
+    else speak("적색 신호로 변경되었습니다.");
+    previousSignal = signalState;
+    alreadyAnnouncedChange = true;
+  }
+
+  // 12초 남았을 때 매 주기 안내
   if (sec === 12 && !twelveSecondAnnounced) {
     const ttsPre = signalState === "red"
       ? `곧 녹색 신호로 전환됩니다. 12초 남았습니다.`
