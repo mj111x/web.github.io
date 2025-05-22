@@ -1,4 +1,4 @@
-// ✅ 웹페이지 script.js (TTS 카운트다운/연결 순간 멘트 고정 / KST 기준 주기 반영)
+// ✅ 웹페이지 script.js (TTS 멘트: 연결 순간 1회, 12초 예고 반복, 10초 이하 카운트다운 반복)
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -19,7 +19,7 @@ let connected = false;
 let greenDuration = 30;
 let redDuration = 30;
 let justConnected = true;
-let lastAnnounceTime = null;
+let twelveSecondAnnounced = false;
 
 function speak(text) {
   if ('speechSynthesis' in window) {
@@ -80,34 +80,35 @@ function updateMent() {
 
   messageEl.innerText = message;
 
-  // 연결된 순간 1회만 멘트 출력
+  // 연결된 순간 1회 멘트 출력
   if (justConnected) {
-    speak(spoken);
+    if (signalRemainingTime <= 10) speak(spoken);
     justConnected = false;
-    lastAnnounceTime = Date.now();
     countdownSpoken = false;
+    twelveSecondAnnounced = false;
     previousSignal = signalState;
     return;
   }
 
-  const now = Date.now();
-
-  // 카운트다운 12초 전 멘트 (1회)
-  if (sec === 12 && (!lastAnnounceTime || now - lastAnnounceTime > 15000)) {
+  // 매 주기마다 12초 예고 멘트
+  if (sec === 12 && !twelveSecondAnnounced) {
     const ttsPre = signalState === "red"
       ? `곧 녹색 신호로 전환됩니다. 12초 남았습니다.`
       : `곧 적색 신호로 전환됩니다. 12초 남았습니다.`;
     speak(ttsPre);
-    lastAnnounceTime = now;
+    twelveSecondAnnounced = true;
   }
 
-  // 10초 이하일 때 카운트다운 음성 출력 (1회)
+  if (sec !== 12) twelveSecondAnnounced = false;
+
+  // 10초 이하 카운트다운 반복
   if (sec <= 10 && !countdownSpoken) {
     countdownSpoken = true;
     for (let i = sec; i >= 1; i--) {
       setTimeout(() => speak(`${i}초`), (sec - i) * 1000);
     }
   }
+  if (sec > 10) countdownSpoken = false;
 }
 
 function startCountdown() {
