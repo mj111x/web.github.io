@@ -104,7 +104,6 @@ function startUploadLoop() {
   }, 1000);
 }
 
-
 navigator.geolocation.watchPosition(
   (pos) => {
     const now = Date.now();
@@ -121,13 +120,19 @@ navigator.geolocation.watchPosition(
       lastGPSUpdateTime !== 0 &&
       dt > 0
     ) {
+      // 거리 계산 (m)
       d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
+
+      // 속도 계산 (m/s)
       speedEstimate = d / dt;
 
-      // ✅ 동일 속도 간주 기준: 변동폭 0.3 이하
+      // ✅ 정지 간주 조건:
+      // - 속도 < 0.4m/s (거의 정지)
+      // - 변동폭 < 0.2m/s (거의 동일)
       if (
+        speedEstimate < 0.4 &&
         previousGpsSpeed !== null &&
-        Math.abs(previousGpsSpeed - speedEstimate) < 0.3
+        Math.abs(previousGpsSpeed - speedEstimate) < 0.2
       ) {
         sameSpeedCount++;
       } else {
@@ -136,14 +141,13 @@ navigator.geolocation.watchPosition(
 
       previousGpsSpeed = speedEstimate;
 
-      // ✅ 3회 연속이면 정지로 간주
+      // ✅ 3회 연속 정지 조건 만족 → GPS 속도 0으로 처리
       if (sameSpeedCount >= 3) {
         gpsSpeed = 0;
-        sameSpeedCount = 0;
+        sameSpeedCount = 0; // 초기화
       } else {
         gpsSpeed = speedEstimate;
       }
-
     } else {
       gpsSpeed = 0;
     }
@@ -159,7 +163,7 @@ navigator.geolocation.watchPosition(
     document.getElementById("lat").textContent = currentLatitude.toFixed(6);
     document.getElementById("lon").textContent = currentLongitude.toFixed(6);
 
-    // 로그 출력
+    // 디버깅 로그
     console.log(
       "📍 거리:", d.toFixed(3),
       "| 추정속도:", speedEstimate.toFixed(3),
@@ -170,6 +174,7 @@ navigator.geolocation.watchPosition(
   (err) => console.warn("❌ 위치 추적 실패:", err.message),
   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 );
+
 
 function getSignalStateByClock() {
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
