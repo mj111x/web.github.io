@@ -66,14 +66,16 @@ function handleDeviceMotion(event) {
     lastSpeedUpdateTime = now;
   }
 }
-
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
 
     const rawSpeed = gpsSpeed > accelSpeed ? gpsSpeed : accelSpeed;
-    lastSpeed = rawSpeed < SPEED_CUTOFF ? 0 : rawSpeed;
-    if (rawSpeed >= SPEED_CUTOFF) speedSamples.push(rawSpeed);
+    lastSpeed = rawSpeed;
+
+    if (lastSpeed >= SPEED_CUTOFF) {
+      speedSamples.push(lastSpeed);
+    }
 
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
@@ -82,7 +84,7 @@ function startUploadLoop() {
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
-      speed: lastSpeed,
+      speed: (gpsStationaryCount >= 3 || lastSpeed < SPEED_CUTOFF) ? 0 : lastSpeed,
       averageSpeed: avgSpeed,
       location: {
         latitude: +currentLatitude.toFixed(6),
@@ -91,6 +93,7 @@ function startUploadLoop() {
     }));
   }, 1000);
 }
+
 
 navigator.geolocation.watchPosition(
   (pos) => {
