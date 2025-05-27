@@ -98,21 +98,25 @@ navigator.geolocation.watchPosition(
     const lat = pos.coords.latitude;
     const lon = pos.coords.longitude;
 
-    if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0) {
-      const dt = (now - lastGPSUpdateTime) / 1000;
-      if (dt > 0) {
-        const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
-        const newSpeed = d / dt; // m/s
-
-        if (newSpeed < 0.1) {
-          gpsStationaryCount++;
-        } else {
-          gpsStationaryCount = 0;
-        }
-
-        gpsSpeed = (gpsStationaryCount >= 3) ? 0 : newSpeed;
-      }
+    if (
+      lastGPSLatitude !== null &&
+      lastGPSLongitude !== null &&
+      lastGPSUpdateTime !== 0 &&
+      lat.toFixed(6) === lastGPSLatitude.toFixed(6) &&
+      lon.toFixed(6) === lastGPSLongitude.toFixed(6)
+    ) {
+      gpsStationaryCount++;
     } else {
+      gpsStationaryCount = 0;
+    }
+
+    const dt = (now - lastGPSUpdateTime) / 1000;
+    if (dt > 0 && gpsStationaryCount < 3) {
+      const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
+      gpsSpeed = d / dt; // m/s
+    }
+
+    if (gpsStationaryCount >= 3) {
       gpsSpeed = 0;
     }
 
@@ -127,7 +131,6 @@ navigator.geolocation.watchPosition(
   (err) => console.warn("❌ 위치 추적 실패:", err.message),
   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 );
-
 
 function getSignalStateByClock() {
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
