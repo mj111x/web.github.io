@@ -30,6 +30,8 @@ let lastGPSLongitude = null;
 let gpsSpeed = 0;
 let accelSpeed = 0;
 let gpsStationaryCount = 0;
+let sameSpeedCount = 0;
+let previousGpsSpeed = null;
 
 function speak(text) {
   if ('speechSynthesis' in window && text !== lastSpoken && !isSpeaking) {
@@ -103,7 +105,6 @@ function startUploadLoop() {
   }, 1000);
 }
 
-
 navigator.geolocation.watchPosition(
   (pos) => {
     const now = Date.now();
@@ -115,48 +116,57 @@ navigator.geolocation.watchPosition(
     let speedEstimate = 0;
 
     if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0 && dt > 0) {
-      // 거리 계산
       d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
       speedEstimate = d / dt;
 
-      // ✅ 미세한 변화도 "정지"로 간주 (1초 동안 1.5m 미만 이동 시)
-      if (d < 1.5 || speedEstimate < 0.3) {
+      // ✅ 조건 1: 0.4m/s 이하 3번 연속
+      if (speedEstimate <= 0.4) {
         gpsStationaryCount++;
       } else {
         gpsStationaryCount = 0;
       }
 
-      // ✅ 3회 연속 미세 움직임이면 무조건 gpsSpeed = 0
-      gpsSpeed = (gpsStationaryCount >= 3) ? 0 : speedEstimate;
+      // ✅ 조건 2: 같은 속도 3번 연속
+      if (previousGpsSpeed !== null && Math.abs(previousGpsSpeed - speedEstimate) < 0.01) {
+        sameSpeedCount++;
+      } else {
+        sameSpeedCount = 0;
+      }
+
+      previousGpsSpeed = speedEstimate;
+
+      // ✅ 둘 중 하나라도 만족하면 정지로 간주
+      if (gpsStationaryCount >= 3 || sameSpeedCount >= 3) {
+        gpsSpeed = 0;
+      } else {
+        gpsSpeed = speedEstimate;
+      }
+
     } else {
       gpsSpeed = 0;
     }
 
-    // 위치 기록
     lastGPSLatitude = lat;
     lastGPSLongitude = lon;
     lastGPSUpdateTime = now;
     currentLatitude = lat;
     currentLongitude = lon;
 
-    // 화면에 표시
     document.getElementById("lat").textContent = currentLatitude.toFixed(6);
     document.getElementById("lon").textContent = currentLongitude.toFixed(6);
 
     // 🔍 디버깅 로그
     console.log(
-      "📍 위도:", lat,
-      "경도:", lon,
-      "| 거리:", d.toFixed(3),
+      "📍거리:", d.toFixed(3),
       "| 추정속도:", speedEstimate.toFixed(3),
       "| gpsSpeed:", gpsSpeed.toFixed(3),
-      "| 정지횟수:", gpsStationaryCount
+      "| ⛔ 느린횟수:", gpsStationaryCount,
+      "| 🎯 동일속도횟수:", sameSpeedCount
     );
   },
   (err) => console.warn("❌ 위치 추적 실패:", err.message),
   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 );
-
 
 function getSignalStateByClock() {
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
