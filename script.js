@@ -102,19 +102,22 @@ navigator.geolocation.watchPosition(
     const lon = pos.coords.longitude;
 
     const dt = (now - lastGPSUpdateTime) / 1000;
+
+    let speedEstimate = 0;
+    let d = 0;
+
     if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0 && dt > 0) {
-      const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
-      const speedEstimate = d / dt;
+      d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
+      speedEstimate = d / dt;
 
       if (d < 0.8 && speedEstimate < 0.2) {
         gpsStationaryCount++;
-        if (gpsStationaryCount >= 3) {
-          gpsSpeed = 0;  // ✅ 여기서 정확히 0으로 명시적 설정
-        }
       } else {
         gpsStationaryCount = 0;
-        gpsSpeed = speedEstimate;  // ✅ 움직임 있을 때만 갱신
       }
+
+      // ✅ 핵심: 정지 상태면 gpsSpeed를 강제로 0 덮어쓰기
+      gpsSpeed = (gpsStationaryCount >= 3) ? 0 : speedEstimate;
 
     } else {
       gpsSpeed = 0;
@@ -131,7 +134,6 @@ navigator.geolocation.watchPosition(
   (err) => console.warn("❌ 위치 추적 실패:", err.message),
   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 );
-
 
 
 function getSignalStateByClock() {
