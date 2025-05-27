@@ -32,6 +32,8 @@ let accelSpeed = 0;
 let gpsStationaryCount = 0;
 let sameSpeedCount = 0;
 let previousGpsSpeed = null;
+let recentSpeeds = [];
+let recentLatitudes = [];
 
 function speak(text) {
   if ('speechSynthesis' in window && text !== lastSpoken && !isSpeaking) {
@@ -68,35 +70,49 @@ function handleDeviceMotion(event) {
     lastSpeedUpdateTime = now;
   }
 }
+
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
 
+    // 현재 속도 계산
     const rawSpeed = gpsSpeed > accelSpeed ? gpsSpeed : accelSpeed;
-    const isStationary = (gpsStationaryCount >= 3 || rawSpeed < SPEED_CUTOFF);
-    lastSpeed = isStationary ? 0 : rawSpeed;
+    lastSpeed = rawSpeed >= SPEED_CUTOFF ? rawSpeed : 0;
 
-    if (!isStationary) {
+    if (lastSpeed >= SPEED_CUTOFF) {
       speedSamples.push(lastSpeed);
+    }
+
+    // 📌 최근 3개 저장
+    recentSpeeds.push(lastSpeed);
+    recentLatitudes.push(currentLatitude);
+
+    // 최대 3개로 유지
+    if (recentSpeeds.length > 3) recentSpeeds.shift();
+    if (recentLatitudes.length > 3) recentLatitudes.shift();
+
+    // 📌 정지 조건: 속도 동일 or 위도 동일 3회 연속
+    const allSpeedsSame = recentSpeeds.length === 3 &&
+      recentSpeeds[0] === recentSpeeds[1] &&
+      recentSpeeds[1] === recentSpeeds[2];
+
+    const allLatitudesSame = recentLatitudes.length === 3 &&
+      recentLatitudes[0] === recentLatitudes[1] &&
+      recentLatitudes[1] === recentLatitudes[2];
+
+    if (allSpeedsSame || allLatitudesSame) {
+      lastSpeed = 0;
     }
 
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
 
-    console.log(
-      "🛰 gpsSpeed:", gpsSpeed.toFixed(4),
-      "| 🦶 accelSpeed:", accelSpeed.toFixed(4),
-      "| 💡 rawSpeed:", rawSpeed.toFixed(4),
-      "| ⛔ 정지카운트:", gpsStationaryCount,
-      "| 📤 전송속도:", lastSpeed.toFixed(4)
-    );
-
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
       speed: lastSpeed,
-      averageSpeed: avgSpeed,
+      averageSpeed: avgSpeed >= SPEED_CUTOFF ? avgSpeed : 0,
       location: {
         latitude: +currentLatitude.toFixed(6),
         longitude: +currentLongitude.toFixed(6)
