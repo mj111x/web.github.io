@@ -103,7 +103,6 @@ function startUploadLoop() {
   }, 1000);
 }
 
-
 navigator.geolocation.watchPosition(
   (pos) => {
     const now = Date.now();
@@ -111,37 +110,52 @@ navigator.geolocation.watchPosition(
     const lon = pos.coords.longitude;
 
     const dt = (now - lastGPSUpdateTime) / 1000;
+    let d = 0;
+    let speedEstimate = 0;
 
     if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0 && dt > 0) {
-      const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
-      const speedEstimate = d / dt;
+      // 거리 계산
+      d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
+      speedEstimate = d / dt;
 
-      if (d < 1.2 && speedEstimate < 0.2) {
+      // ✅ 미세한 변화도 "정지"로 간주 (1초 동안 1.5m 미만 이동 시)
+      if (d < 1.5 || speedEstimate < 0.3) {
         gpsStationaryCount++;
       } else {
         gpsStationaryCount = 0;
-        gpsSpeed = speedEstimate;
       }
 
-      if (gpsStationaryCount >= 3) {
-        gpsSpeed = 0;
-      }
-
+      // ✅ 3회 연속 미세 움직임이면 무조건 gpsSpeed = 0
+      gpsSpeed = (gpsStationaryCount >= 3) ? 0 : speedEstimate;
     } else {
       gpsSpeed = 0;
     }
 
+    // 위치 기록
     lastGPSLatitude = lat;
     lastGPSLongitude = lon;
     lastGPSUpdateTime = now;
     currentLatitude = lat;
     currentLongitude = lon;
+
+    // 화면에 표시
     document.getElementById("lat").textContent = currentLatitude.toFixed(6);
     document.getElementById("lon").textContent = currentLongitude.toFixed(6);
+
+    // 🔍 디버깅 로그
+    console.log(
+      "📍 위도:", lat,
+      "경도:", lon,
+      "| 거리:", d.toFixed(3),
+      "| 추정속도:", speedEstimate.toFixed(3),
+      "| gpsSpeed:", gpsSpeed.toFixed(3),
+      "| 정지횟수:", gpsStationaryCount
+    );
   },
   (err) => console.warn("❌ 위치 추적 실패:", err.message),
   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 );
+
 
 function getSignalStateByClock() {
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
@@ -334,44 +348,6 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
     alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
     return;
   }
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      currentLatitude = pos.coords.latitude;
-      currentLongitude = pos.coords.longitude;
-      document.getElementById("lat").textContent = currentLatitude.toFixed(6);
-      document.getElementById("lon").textContent = currentLongitude.toFixed(6);
-      document.getElementById("requestPermissionButton").style.display = "none";
-      document.getElementById("radarAnimation").style.display = "block";
-      connect();
-      navigator.geolocation.watchPosition(
-        (pos) => {
-          const now = Date.now();
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0) {
-            const dt = (now - lastGPSUpdateTime) / 1000;
-            const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
-            gpsSpeed = d / dt * 3.6;
-          }
-          lastGPSLatitude = lat;
-          lastGPSLongitude = lon;
-          lastGPSUpdateTime = now;
-          currentLatitude = lat;
-          currentLongitude = lon;
-          document.getElementById("lat").textContent = currentLatitude.toFixed(6);
-          document.getElementById("lon").textContent = currentLongitude.toFixed(6);
-        },
-        (err) => console.warn("❌ 위치 추적 실패:", err.message),
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-      window.addEventListener("devicemotion", handleDeviceMotion, true);
-    },
-    (err) => {
-      alert("위치 권한이 필요합니다.");
-      console.warn("위치 권한 거부:", err.message);
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-  );
 });
 
 document.getElementById("homeBtn").addEventListener("click", () => {
@@ -382,3 +358,4 @@ document.getElementById("mypageBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "none";
   document.getElementById("mypage").style.display = "block";
 });
+
