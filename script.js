@@ -115,19 +115,27 @@ navigator.geolocation.watchPosition(
     let d = 0;
     let speedEstimate = 0;
 
-    if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0 && dt > 0) {
+    if (
+      lastGPSLatitude !== null &&
+      lastGPSLongitude !== null &&
+      lastGPSUpdateTime !== 0 &&
+      dt > 0
+    ) {
       d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
       speedEstimate = d / dt;
 
-      // ✅ 조건 1: 0.4m/s 이하 3번 연속
+      // ✅ 조건 1: 0.4m/s 이하 상태 3회 연속
       if (speedEstimate <= 0.4) {
         gpsStationaryCount++;
       } else {
         gpsStationaryCount = 0;
       }
 
-      // ✅ 조건 2: 같은 속도 3번 연속
-      if (previousGpsSpeed !== null && Math.abs(previousGpsSpeed - speedEstimate) < 0.01) {
+      // ✅ 조건 2: 같은 속도 3회 연속
+      if (
+        previousGpsSpeed !== null &&
+        Math.abs(previousGpsSpeed - speedEstimate) < 0.01
+      ) {
         sameSpeedCount++;
       } else {
         sameSpeedCount = 0;
@@ -135,33 +143,36 @@ navigator.geolocation.watchPosition(
 
       previousGpsSpeed = speedEstimate;
 
-      // ✅ 둘 중 하나라도 만족하면 정지로 간주
+      // ✅ 정지 판단: 둘 중 하나라도 만족 시
       if (gpsStationaryCount >= 3 || sameSpeedCount >= 3) {
         gpsSpeed = 0;
+        gpsStationaryCount = 0;
+        sameSpeedCount = 0;
       } else {
         gpsSpeed = speedEstimate;
       }
-
     } else {
       gpsSpeed = 0;
     }
 
+    // 위치 업데이트
     lastGPSLatitude = lat;
     lastGPSLongitude = lon;
     lastGPSUpdateTime = now;
     currentLatitude = lat;
     currentLongitude = lon;
 
+    // UI 표시
     document.getElementById("lat").textContent = currentLatitude.toFixed(6);
     document.getElementById("lon").textContent = currentLongitude.toFixed(6);
 
-    // 🔍 디버깅 로그
+    // 디버깅 로그
     console.log(
-      "📍거리:", d.toFixed(3),
+      "📍 거리:", d.toFixed(3),
       "| 추정속도:", speedEstimate.toFixed(3),
       "| gpsSpeed:", gpsSpeed.toFixed(3),
-      "| ⛔ 느린횟수:", gpsStationaryCount,
-      "| 🎯 동일속도횟수:", sameSpeedCount
+      "| 느린속도횟수:", gpsStationaryCount,
+      "| 동일속도횟수:", sameSpeedCount
     );
   },
   (err) => console.warn("❌ 위치 추적 실패:", err.message),
