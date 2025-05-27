@@ -1,5 +1,3 @@
-// 전체 GPS + 가속도 기반 걸음 속도 측정 반영된 script.js 전체 코드 (단위 m/s, 0.3m/s 이하 무시, GPS 거리/시간 기반 속도 측정 포함)
-
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
@@ -60,7 +58,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 function handleDeviceMotion(event) {
   const accY = event.acceleration.y || 0;
   const now = Date.now();
-  if (Math.abs(accY) > 2.5 && now - lastSpeedUpdateTime > 800) {
+  if (Math.abs(accY) > 3.0 && now - lastSpeedUpdateTime > 1200) {
     const stepTime = (now - lastSpeedUpdateTime) / 1000;
     const rawSpeed = 0.45 / stepTime; // m/s
     accelSpeed = rawSpeed;
@@ -101,8 +99,12 @@ navigator.geolocation.watchPosition(
 
     if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0) {
       const dt = (now - lastGPSUpdateTime) / 1000;
-      const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
-      gpsSpeed = d / dt; // m/s
+      if (dt > 0) {
+        const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
+        gpsSpeed = d / dt; // m/s
+      }
+    } else {
+      gpsSpeed = 0;
     }
 
     lastGPSLatitude = lat;
