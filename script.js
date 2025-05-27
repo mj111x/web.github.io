@@ -124,17 +124,10 @@ navigator.geolocation.watchPosition(
       d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
       speedEstimate = d / dt;
 
-      // ✅ 조건 1: 0.4m/s 이하 상태 3회 연속
-      if (speedEstimate <= 0.4) {
-        gpsStationaryCount++;
-      } else {
-        gpsStationaryCount = 0;
-      }
-
-      // ✅ 조건 2: 같은 속도 3회 연속
+      // ✅ 동일한 속도가 3번 반복되면 강제로 0 처리
       if (
         previousGpsSpeed !== null &&
-        Math.abs(previousGpsSpeed - speedEstimate) < 0.01
+        Math.abs(previousGpsSpeed - speedEstimate) < 0.0001
       ) {
         sameSpeedCount++;
       } else {
@@ -143,35 +136,31 @@ navigator.geolocation.watchPosition(
 
       previousGpsSpeed = speedEstimate;
 
-      // ✅ 정지 판단: 둘 중 하나라도 만족 시
-      if (gpsStationaryCount >= 3 || sameSpeedCount >= 3) {
+      if (sameSpeedCount >= 3) {
         gpsSpeed = 0;
-        gpsStationaryCount = 0;
-        sameSpeedCount = 0;
+        sameSpeedCount = 0; // 카운트 초기화
       } else {
         gpsSpeed = speedEstimate;
       }
+
     } else {
       gpsSpeed = 0;
     }
 
-    // 위치 업데이트
+    // 위치 및 시간 갱신
     lastGPSLatitude = lat;
     lastGPSLongitude = lon;
     lastGPSUpdateTime = now;
     currentLatitude = lat;
     currentLongitude = lon;
 
-    // UI 표시
     document.getElementById("lat").textContent = currentLatitude.toFixed(6);
     document.getElementById("lon").textContent = currentLongitude.toFixed(6);
 
-    // 디버깅 로그
     console.log(
       "📍 거리:", d.toFixed(3),
       "| 추정속도:", speedEstimate.toFixed(3),
       "| gpsSpeed:", gpsSpeed.toFixed(3),
-      "| 느린속도횟수:", gpsStationaryCount,
       "| 동일속도횟수:", sameSpeedCount
     );
   },
