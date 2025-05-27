@@ -72,7 +72,7 @@ function startUploadLoop() {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
 
     const rawSpeed = gpsSpeed > accelSpeed ? gpsSpeed : accelSpeed;
-    lastSpeed = rawSpeed;
+    lastSpeed = rawSpeed < SPEED_CUTOFF ? 0 : rawSpeed;
     if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
 
     const avgSpeed = speedSamples.length > 0
@@ -82,7 +82,7 @@ function startUploadLoop() {
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
-      speed: lastSpeed >= SPEED_CUTOFF ? lastSpeed : 0,
+      speed: lastSpeed,
       averageSpeed: avgSpeed >= SPEED_CUTOFF ? avgSpeed : 0,
       location: {
         latitude: +currentLatitude.toFixed(6),
@@ -104,17 +104,13 @@ navigator.geolocation.watchPosition(
         const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
         const newSpeed = d / dt; // m/s
 
-        if (newSpeed < 0.4) {
+        if (newSpeed < 0.1) {
           gpsStationaryCount++;
         } else {
           gpsStationaryCount = 0;
-          gpsSpeed = newSpeed;
         }
 
-        // 가만히 있으면 gpsSpeed를 0으로 안정화
-        if (gpsStationaryCount >= 3) {
-          gpsSpeed = 0;
-        }
+        gpsSpeed = (gpsStationaryCount >= 3) ? 0 : newSpeed;
       }
     } else {
       gpsSpeed = 0;
