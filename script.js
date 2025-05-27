@@ -82,6 +82,10 @@ function startUploadLoop() {
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
 
+    console.log("📡 GPS:", gpsSpeed.toFixed(2), 
+                "| 🎯 Accel:", accelSpeed.toFixed(2), 
+                "| 🚀 Sent Speed:", lastSpeed.toFixed(2));
+
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
@@ -94,6 +98,7 @@ function startUploadLoop() {
     }));
   }, 1000);
 }
+
 
 navigator.geolocation.watchPosition(
   (pos) => {
@@ -110,13 +115,12 @@ navigator.geolocation.watchPosition(
       d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
       speedEstimate = d / dt;
 
-      if (d < 0.8 && speedEstimate < 0.2) {
+      if (d < 1.2 && speedEstimate < 0.2) {
         gpsStationaryCount++;
       } else {
         gpsStationaryCount = 0;
       }
 
-      // ✅ 핵심: 정지 상태면 gpsSpeed를 강제로 0 덮어쓰기
       gpsSpeed = (gpsStationaryCount >= 3) ? 0 : speedEstimate;
 
     } else {
@@ -134,7 +138,6 @@ navigator.geolocation.watchPosition(
   (err) => console.warn("❌ 위치 추적 실패:", err.message),
   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 );
-
 
 function getSignalStateByClock() {
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
