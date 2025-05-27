@@ -66,15 +66,15 @@ function handleDeviceMotion(event) {
     lastSpeedUpdateTime = now;
   }
 }
-
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
 
     const rawSpeed = gpsSpeed > accelSpeed ? gpsSpeed : accelSpeed;
-    lastSpeed = (gpsStationaryCount >= 3 || rawSpeed < SPEED_CUTOFF) ? 0 : rawSpeed;
+    const isStationary = (gpsStationaryCount >= 3 || rawSpeed < SPEED_CUTOFF);
+    lastSpeed = isStationary ? 0 : rawSpeed;
 
-    if (lastSpeed >= SPEED_CUTOFF) {
+    if (!isStationary) {
       speedSamples.push(lastSpeed);
     }
 
@@ -82,9 +82,13 @@ function startUploadLoop() {
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
 
-    console.log("📡 GPS:", gpsSpeed.toFixed(2), 
-                "| 🎯 Accel:", accelSpeed.toFixed(2), 
-                "| 🚀 Sent Speed:", lastSpeed.toFixed(2));
+    console.log(
+      "🛰 gpsSpeed:", gpsSpeed.toFixed(4),
+      "| 🦶 accelSpeed:", accelSpeed.toFixed(4),
+      "| 💡 rawSpeed:", rawSpeed.toFixed(4),
+      "| ⛔ 정지카운트:", gpsStationaryCount,
+      "| 📤 전송속도:", lastSpeed.toFixed(4)
+    );
 
     socket.send(JSON.stringify({
       type: "web_data",
@@ -108,20 +112,20 @@ navigator.geolocation.watchPosition(
 
     const dt = (now - lastGPSUpdateTime) / 1000;
 
-    let speedEstimate = 0;
-    let d = 0;
-
     if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0 && dt > 0) {
-      d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
-      speedEstimate = d / dt;
+      const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
+      const speedEstimate = d / dt;
 
       if (d < 1.2 && speedEstimate < 0.2) {
         gpsStationaryCount++;
       } else {
         gpsStationaryCount = 0;
+        gpsSpeed = speedEstimate;
       }
 
-      gpsSpeed = (gpsStationaryCount >= 3) ? 0 : speedEstimate;
+      if (gpsStationaryCount >= 3) {
+        gpsSpeed = 0;
+      }
 
     } else {
       gpsSpeed = 0;
