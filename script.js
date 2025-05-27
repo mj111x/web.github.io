@@ -75,44 +75,27 @@ function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
 
-    // 현재 속도 계산
+    // GPS 기반 속도 선택
     const rawSpeed = gpsSpeed > accelSpeed ? gpsSpeed : accelSpeed;
-    lastSpeed = rawSpeed >= SPEED_CUTOFF ? rawSpeed : 0;
 
-    if (lastSpeed >= SPEED_CUTOFF) {
-      speedSamples.push(lastSpeed);
-    }
+    // ✅ 현재 속도만 보정
+    lastSpeed = rawSpeed < 0.4 ? 0 : rawSpeed;
 
-    // 📌 최근 3개 저장
-    recentSpeeds.push(lastSpeed);
-    recentLatitudes.push(currentLatitude);
-
-    // 최대 3개로 유지
-    if (recentSpeeds.length > 3) recentSpeeds.shift();
-    if (recentLatitudes.length > 3) recentLatitudes.shift();
-
-    // 📌 정지 조건: 속도 동일 or 위도 동일 3회 연속
-    const allSpeedsSame = recentSpeeds.length === 3 &&
-      recentSpeeds[0] === recentSpeeds[1] &&
-      recentSpeeds[1] === recentSpeeds[2];
-
-    const allLatitudesSame = recentLatitudes.length === 3 &&
-      recentLatitudes[0] === recentLatitudes[1] &&
-      recentLatitudes[1] === recentLatitudes[2];
-
-    if (allSpeedsSame || allLatitudesSame) {
-      lastSpeed = 0;
+    // ✅ 평균 속도는 계속 누적
+    if (rawSpeed >= SPEED_CUTOFF) {
+      speedSamples.push(rawSpeed);  // ⚠️ lastSpeed 말고 rawSpeed 누적!
     }
 
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
 
+    // ✅ 서버 전송 (평균은 누적 그대로, 현재는 보정된 값)
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
-      speed: lastSpeed,
-      averageSpeed: avgSpeed >= SPEED_CUTOFF ? avgSpeed : 0,
+      speed: lastSpeed,         // 실시간, 0 보정 가능
+      averageSpeed: avgSpeed,   // 누적, 절대 0 보정 X
       location: {
         latitude: +currentLatitude.toFixed(6),
         longitude: +currentLongitude.toFixed(6)
@@ -120,6 +103,7 @@ function startUploadLoop() {
     }));
   }, 1000);
 }
+
 
 navigator.geolocation.watchPosition(
   (pos) => {
