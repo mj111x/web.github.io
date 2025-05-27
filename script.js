@@ -67,6 +67,7 @@ function handleDeviceMotion(event) {
   }
 }
 
+
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
@@ -98,25 +99,21 @@ navigator.geolocation.watchPosition(
     const lat = pos.coords.latitude;
     const lon = pos.coords.longitude;
 
-    if (
-      lastGPSLatitude !== null &&
-      lastGPSLongitude !== null &&
-      lastGPSUpdateTime !== 0 &&
-      lat.toFixed(6) === lastGPSLatitude.toFixed(6) &&
-      lon.toFixed(6) === lastGPSLongitude.toFixed(6)
-    ) {
-      gpsStationaryCount++;
-    } else {
-      gpsStationaryCount = 0;
-    }
-
     const dt = (now - lastGPSUpdateTime) / 1000;
-    if (dt > 0 && gpsStationaryCount < 3) {
+    if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0 && dt > 0) {
       const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
-      gpsSpeed = d / dt; // m/s
-    }
 
-    if (gpsStationaryCount >= 3) {
+      if (d < 0.5) {
+        gpsStationaryCount++;
+      } else {
+        gpsStationaryCount = 0;
+        gpsSpeed = d / dt; // m/s
+      }
+
+      if (gpsStationaryCount >= 3) {
+        gpsSpeed = 0;
+      }
+    } else {
       gpsSpeed = 0;
     }
 
