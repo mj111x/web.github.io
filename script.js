@@ -103,6 +103,7 @@ function startUploadLoop() {
   }, 1000);
 }
 
+
 navigator.geolocation.watchPosition(
   (pos) => {
     const now = Date.now();
