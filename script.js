@@ -66,12 +66,13 @@ function handleDeviceMotion(event) {
     lastSpeedUpdateTime = now;
   }
 }
+
 function startUploadLoop() {
   setInterval(() => {
     if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
 
     const rawSpeed = gpsSpeed > accelSpeed ? gpsSpeed : accelSpeed;
-    lastSpeed = rawSpeed;
+    lastSpeed = (gpsStationaryCount >= 3 || rawSpeed < SPEED_CUTOFF) ? 0 : rawSpeed;
 
     if (lastSpeed >= SPEED_CUTOFF) {
       speedSamples.push(lastSpeed);
@@ -84,7 +85,7 @@ function startUploadLoop() {
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
-      speed: (gpsStationaryCount >= 3 || lastSpeed < SPEED_CUTOFF) ? 0 : lastSpeed,
+      speed: lastSpeed,
       averageSpeed: avgSpeed,
       location: {
         latitude: +currentLatitude.toFixed(6),
@@ -93,7 +94,6 @@ function startUploadLoop() {
     }));
   }, 1000);
 }
-
 
 navigator.geolocation.watchPosition(
   (pos) => {
@@ -104,12 +104,13 @@ navigator.geolocation.watchPosition(
     const dt = (now - lastGPSUpdateTime) / 1000;
     if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0 && dt > 0) {
       const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
+      const speedEstimate = d / dt;
 
-      if (d < 0.5) {
+      if (d < 0.8 && speedEstimate < 0.2) {
         gpsStationaryCount++;
       } else {
         gpsStationaryCount = 0;
-        gpsSpeed = d / dt; // m/s
+        gpsSpeed = speedEstimate;
       }
 
       if (gpsStationaryCount >= 3) {
@@ -130,6 +131,7 @@ navigator.geolocation.watchPosition(
   (err) => console.warn("❌ 위치 추적 실패:", err.message),
   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 );
+
 
 function getSignalStateByClock() {
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
