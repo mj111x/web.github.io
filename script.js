@@ -1,4 +1,4 @@
-// 전체 GPS + 가속도 기반 걸음 속도 측정 반영된 script.js 전체 코드 (단위 m/s, 0.3m/s 이하 무시)
+// 전체 GPS + 가속도 기반 걸음 속도 측정 반영된 script.js 전체 코드 (단위 m/s, 0.3m/s 이하 무시, GPS 거리/시간 기반 속도 측정 포함)
 
 let socket;
 let currentLatitude = 0;
@@ -8,7 +8,7 @@ let lastSpeedUpdateTime = 0;
 let speedSamples = [];
 
 const userId = "20250001";
-const SPEED_CUTOFF_MS = 0.3; // 0.3 m/s 기준 컷오프
+const SPEED_CUTOFF = 0.3;
 let signalRemainingTime = 0;
 let signalState = "red";
 let allowedTime = 999;
@@ -60,10 +60,10 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 function handleDeviceMotion(event) {
   const accY = event.acceleration.y || 0;
   const now = Date.now();
-  if (Math.abs(accY) > 2.5 && now - lastSpeedUpdateTime > 1000) {
+  if (Math.abs(accY) > 2.5 && now - lastSpeedUpdateTime > 800) {
     const stepTime = (now - lastSpeedUpdateTime) / 1000;
     const rawSpeed = 0.45 / stepTime; // m/s
-    accelSpeed = rawSpeed >= (SPEED_CUTOFF / 3.6) ? Math.min(rawSpeed, 3) : 0;
+    accelSpeed = rawSpeed;
     lastSpeedUpdateTime = now;
   }
 }
@@ -74,7 +74,7 @@ function startUploadLoop() {
 
     const rawSpeed = gpsSpeed > accelSpeed ? gpsSpeed : accelSpeed;
     lastSpeed = rawSpeed;
-    if (lastSpeed >= SPEED_CUTOFF_MS) speedSamples.push(lastSpeed);
+    if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
 
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
@@ -83,8 +83,8 @@ function startUploadLoop() {
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
-      speed: lastSpeed >= SPEED_CUTOFF_MS ? lastSpeed : 0,
-      averageSpeed: avgSpeed >= SPEED_CUTOFF_MS ? avgSpeed : 0,
+      speed: lastSpeed >= SPEED_CUTOFF ? lastSpeed : 0,
+      averageSpeed: avgSpeed >= SPEED_CUTOFF ? avgSpeed : 0,
       location: {
         latitude: +currentLatitude.toFixed(6),
         longitude: +currentLongitude.toFixed(6)
@@ -92,6 +92,30 @@ function startUploadLoop() {
     }));
   }, 1000);
 }
+
+navigator.geolocation.watchPosition(
+  (pos) => {
+    const now = Date.now();
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+
+    if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0) {
+      const dt = (now - lastGPSUpdateTime) / 1000;
+      const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
+      gpsSpeed = d / dt; // m/s
+    }
+
+    lastGPSLatitude = lat;
+    lastGPSLongitude = lon;
+    lastGPSUpdateTime = now;
+    currentLatitude = lat;
+    currentLongitude = lon;
+    document.getElementById("lat").textContent = currentLatitude.toFixed(6);
+    document.getElementById("lon").textContent = currentLongitude.toFixed(6);
+  },
+  (err) => console.warn("❌ 위치 추적 실패:", err.message),
+  { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+);
 
 function getSignalStateByClock() {
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
@@ -257,12 +281,12 @@ function connect() {
 
 function updateInfoDisplay() {
   const avg = speedSamples.length > 0
-    ? speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length
+    ? Math.floor(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length)
     : 0;
   document.getElementById("infoBox").style.display = "block";
   document.getElementById("info").innerHTML =
-    `현재 속도: ${(lastSpeed >= SPEED_CUTOFF_MS ? lastSpeed : 0).toFixed(2)} m/s<br>` +
-    `누적 평균 속도: ${(avg >= SPEED_CUTOFF_MS ? avg : 0).toFixed(2)} m/s<br>` +
+    `현재 속도: ${Math.floor(lastSpeed)} km/h<br>` +
+    `누적 평균 속도: ${avg} km/h<br>` +
     `위도: ${currentLatitude.toFixed(6)}<br>` +
     `경도: ${currentLongitude.toFixed(6)}`;
 }
