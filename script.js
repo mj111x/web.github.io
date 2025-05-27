@@ -331,7 +331,6 @@ function updateInfoDisplay() {
     `위도: ${currentLatitude.toFixed(6)}<br>` +
     `경도: ${currentLongitude.toFixed(6)}`;
 }
-
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   if (typeof DeviceMotionEvent?.requestPermission === "function") {
     try {
@@ -349,6 +348,44 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
     alert("이 브라우저는 위치 정보를 지원하지 않습니다.");
     return;
   }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      currentLatitude = pos.coords.latitude;
+      currentLongitude = pos.coords.longitude;
+      document.getElementById("lat").textContent = currentLatitude.toFixed(6);
+      document.getElementById("lon").textContent = currentLongitude.toFixed(6);
+      document.getElementById("requestPermissionButton").style.display = "none";
+      document.getElementById("radarAnimation").style.display = "block";
+      connect();
+      navigator.geolocation.watchPosition(
+        (pos) => {
+          const now = Date.now();
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0) {
+            const dt = (now - lastGPSUpdateTime) / 1000;
+            const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
+            gpsSpeed = d / dt * 3.6;
+          }
+          lastGPSLatitude = lat;
+          lastGPSLongitude = lon;
+          lastGPSUpdateTime = now;
+          currentLatitude = lat;
+          currentLongitude = lon;
+          document.getElementById("lat").textContent = currentLatitude.toFixed(6);
+          document.getElementById("lon").textContent = currentLongitude.toFixed(6);
+        },
+        (err) => console.warn("❌ 위치 추적 실패:", err.message),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+      window.addEventListener("devicemotion", handleDeviceMotion, true);
+    },
+    (err) => {
+      alert("위치 권한이 필요합니다.");
+      console.warn("위치 권한 거부:", err.message);
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
 });
 
 document.getElementById("homeBtn").addEventListener("click", () => {
