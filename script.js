@@ -29,6 +29,7 @@ let lastGPSLatitude = null;
 let lastGPSLongitude = null;
 let gpsSpeed = 0;
 let accelSpeed = 0;
+let gpsStationaryCount = 0;
 
 function speak(text) {
   if ('speechSynthesis' in window && text !== lastSpoken && !isSpeaking) {
@@ -101,7 +102,19 @@ navigator.geolocation.watchPosition(
       const dt = (now - lastGPSUpdateTime) / 1000;
       if (dt > 0) {
         const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
-        gpsSpeed = d / dt; // m/s
+        const newSpeed = d / dt; // m/s
+
+        if (newSpeed < 0.4) {
+          gpsStationaryCount++;
+        } else {
+          gpsStationaryCount = 0;
+          gpsSpeed = newSpeed;
+        }
+
+        // 가만히 있으면 gpsSpeed를 0으로 안정화
+        if (gpsStationaryCount >= 3) {
+          gpsSpeed = 0;
+        }
       }
     } else {
       gpsSpeed = 0;
@@ -118,6 +131,7 @@ navigator.geolocation.watchPosition(
   (err) => console.warn("❌ 위치 추적 실패:", err.message),
   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 );
+
 
 function getSignalStateByClock() {
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
