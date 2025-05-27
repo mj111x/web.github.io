@@ -108,14 +108,14 @@ navigator.geolocation.watchPosition(
 
       if (d < 0.8 && speedEstimate < 0.2) {
         gpsStationaryCount++;
+        if (gpsStationaryCount >= 3) {
+          gpsSpeed = 0;  // ✅ 여기서 정확히 0으로 명시적 설정
+        }
       } else {
         gpsStationaryCount = 0;
-        gpsSpeed = speedEstimate;
+        gpsSpeed = speedEstimate;  // ✅ 움직임 있을 때만 갱신
       }
 
-      if (gpsStationaryCount >= 3) {
-        gpsSpeed = 0;
-      }
     } else {
       gpsSpeed = 0;
     }
@@ -131,6 +131,7 @@ navigator.geolocation.watchPosition(
   (err) => console.warn("❌ 위치 추적 실패:", err.message),
   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 );
+
 
 
 function getSignalStateByClock() {
