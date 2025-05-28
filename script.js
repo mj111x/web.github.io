@@ -98,9 +98,7 @@ function startUploadLoop() {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
     const rawSpeed = accelSpeed;
-
     lastSpeed = rawSpeed < SPEED_CUTOFF ? 0 : rawSpeed;
-
     speedSamples.push(rawSpeed);
 
     const avgSpeed = speedSamples.length > 0
@@ -121,6 +119,7 @@ function startUploadLoop() {
     console.log("📤 전송됨:", lastSpeed.toFixed(2), "m/s", "| 평균:", avgSpeed.toFixed(2), "m/s");
   }, 2000);
 }
+
 navigator.geolocation.watchPosition(
   (pos) => {
     const now = Date.now();
