@@ -95,15 +95,18 @@ function handleDeviceMotion(event) {
 
 function startUploadLoop() {
   setInterval(() => {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+
     const now = Date.now();
 
-    // 걸음 멈춘 상태 보정
+    // ✅ 2초 이상 걸음이 없으면 속도 0 처리
     if (now - lastStepTime > 2000) {
       accelSpeed = 0;
     }
 
     const rawSpeed = accelSpeed;
     lastSpeed = rawSpeed < SPEED_CUTOFF ? 0 : rawSpeed;
+
     speedSamples.push(rawSpeed);
 
     const avgSpeed = speedSamples.length > 0
@@ -124,6 +127,7 @@ function startUploadLoop() {
     console.log("📤 전송:", lastSpeed.toFixed(2), "m/s | 평균:", avgSpeed.toFixed(2));
   }, 2000);
 }
+
 
 navigator.geolocation.watchPosition(
   (pos) => {
