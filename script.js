@@ -89,7 +89,7 @@ function handleDeviceMotion(event) {
     lastSpeedUpdateTime = now;
     stepCount++;
 
-    console.log(`🚶 걸음 감지: ${stepSpeed.toFixed(2)} m/s → EMA: ${smoothedSpeed.toFixed(2)} m/s`);
+    console.log(`걸음 감지: ${stepSpeed.toFixed(2)} m/s → EMA: ${smoothedSpeed.toFixed(2)} m/s`);
   }
 }
 
@@ -99,16 +99,16 @@ function startUploadLoop() {
 
     const now = Date.now();
 
-    // ✅ 2초 이상 걸음 없으면 속도 0 처리
+    // 2초 이상 걸음 없으면 속도 0 처리
     if (now - lastStepTime > 2000) {
       accelSpeed = 0;
     }
 
-    // ✅ 현재 속도: 걸음 기반 속도
+    // 현재 속도: 걸음 기반 속도
     const rawSpeed = accelSpeed;
     lastSpeed = rawSpeed < SPEED_CUTOFF ? 0 : rawSpeed;
 
-    // ✅ 평균 속도는 0 이상인 값만 누적
+    // 평균 속도는 0 이상인 값만 누적
     if (rawSpeed >= SPEED_CUTOFF) {
       speedSamples.push(rawSpeed);
     }
@@ -128,7 +128,7 @@ function startUploadLoop() {
       }
     }));
 
-    console.log("📤 전송됨:", lastSpeed.toFixed(2), "m/s | 평균:", avgSpeed.toFixed(2), "m/s");
+    console.log("전송됨:", lastSpeed.toFixed(2), "m/s | 평균:", avgSpeed.toFixed(2), "m/s");
   }, 2000);
 }
 
@@ -150,7 +150,7 @@ navigator.geolocation.watchPosition(
       const newStride = gpsDistance / stepCount;
       if (newStride >= 0.3 && newStride <= 1.2) {
         dynamicStride = newStride;
-        console.log(`📏 보폭 보정: ${dynamicStride.toFixed(2)} m`);
+        console.log(`보폭 보정: ${dynamicStride.toFixed(2)} m`);
       }
       gpsStart = null;
       gpsDistance = 0;
@@ -162,7 +162,7 @@ navigator.geolocation.watchPosition(
     document.getElementById("lat").textContent = currentLatitude.toFixed(6);
     document.getElementById("lon").textContent = currentLongitude.toFixed(6);
   },
-  (err) => console.warn("❌ 위치 추적 실패:", err.message),
+  (err) => console.warn("위치 추적 실패:", err.message),
   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 );
 
@@ -288,12 +288,11 @@ function connect() {
       document.getElementById("signalBox").style.display = "block";
 
       startCountdown();
-      updateInfoDisplay();  // ✅ 이 한 줄로 infoBox 갱신됨
-    }
+      updateInfoDisplay();  
   };
   
   socket.onerror = (err) => {
-    console.error("❌ WebSocket 오류:", err);
+    console.error("WebSocket 오류:", err);
   };
 }
 
