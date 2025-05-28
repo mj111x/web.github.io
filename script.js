@@ -95,7 +95,12 @@ function handleDeviceMotion(event) {
 
 function startUploadLoop() {
   setInterval(() => {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    const now = Date.now();
+
+    // 걸음 멈춘 상태 보정
+    if (now - lastStepTime > 2000) {
+      accelSpeed = 0;
+    }
 
     const rawSpeed = accelSpeed;
     lastSpeed = rawSpeed < SPEED_CUTOFF ? 0 : rawSpeed;
@@ -116,7 +121,7 @@ function startUploadLoop() {
       }
     }));
 
-    console.log("📤 전송됨:", lastSpeed.toFixed(2), "m/s", "| 평균:", avgSpeed.toFixed(2), "m/s");
+    console.log("📤 전송:", lastSpeed.toFixed(2), "m/s | 평균:", avgSpeed.toFixed(2));
   }, 2000);
 }
 
