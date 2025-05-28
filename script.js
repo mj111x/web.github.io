@@ -258,16 +258,6 @@ function startCountdown() {
 }
 
 
-function handleDeviceMotion(event) {
-  const accY = event.acceleration.y || 0;
-  const now = Date.now();
-  if (Math.abs(accY) > 2.5 && now - lastSpeedUpdateTime > 800) {
-    const stepTime = (now - lastSpeedUpdateTime) / 1000;
-    accelSpeed = Math.min(0.45 / stepTime * 3.6, 3);
-    lastSpeedUpdateTime = now;
-  }
-}
-
 function connect() {
   socket = new WebSocket("wss://041ba76b-1866-418b-8526-3bb61ab0c719-00-2dvb0ldaplvu2.sisko.replit.dev/");
   socket.onopen = () => {
