@@ -230,7 +230,8 @@ function updateMent() {
   if (signalState !== previousSignal && !alreadyAnnouncedChange) {
     speak(signalState === "green"
       ? "녹색 신호로 변경되었습니다. 건너가십시오."
-      : "적색 신호로 변경되었습니다.");
+      : "적색 신호로 변경되었습니다."
+    );
     alreadyAnnouncedChange = true;
     previousSignal = signalState;
     twelveSecondAnnounced = false;
@@ -272,6 +273,25 @@ function connect() {
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
   };
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === "crossing_result" && data.webUserId === userId) {
+      connected = true;
+      justConnected = true;
+      initialSpoken = false;
+      initialMessageSpoken = false;
+      allowedTime = data.allowedTime;
+      greenDuration = data.greenDuration || greenDuration;
+      redDuration = data.redDuration || redDuration;
+
+      document.getElementById("radarAnimation").style.display = "none";
+      document.getElementById("signalBox").style.display = "block";
+
+      startCountdown();
+      updateInfoDisplay();  // ✅ 이 한 줄로 infoBox 갱신됨
+    }
+  };
+  
   socket.onerror = (err) => {
     console.error("❌ WebSocket 오류:", err);
   };
@@ -385,6 +405,20 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 });
+
+function updateInfoDisplay() {
+  const avg = speedSamples.length > 0
+    ? (speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
+    : "0.00";
+
+  document.getElementById("infoBox").style.display = "block";
+
+  document.getElementById("info").innerHTML =
+    `현재 속도: ${lastSpeed.toFixed(2)} m/s<br>` +
+    `평균 속도: ${avg} m/s<br>` +
+    `위도: ${currentLatitude.toFixed(6)}<br>` +
+    `경도: ${currentLongitude.toFixed(6)}`;
+}
 
 document.getElementById("homeBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "block";
