@@ -269,7 +269,7 @@ function startCountdown() {
 function connect() {
   socket = new WebSocket("wss://041ba76b-1866-418b-8526-3bb61ab0c719-00-2dvb0ldaplvu2.sisko.replit.dev/");
   socket.onopen = () => {
-    console.log("✅ WebSocket 연결 완료");
+    console.log("WebSocket 연결 완료");
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
   };
@@ -427,4 +427,4 @@ document.getElementById("mypageBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "none";
   document.getElementById("mypage").style.display = "block";
 });
-
+}
