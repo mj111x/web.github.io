@@ -1,39 +1,53 @@
 let socket;
 let currentLatitude = 0;
 let currentLongitude = 0;
-let lastSpeed = 0;
-let lastSpeedUpdateTime = 0;
-let speedSamples = [];
+
+let lastSpeed = 0;                  // 최종 보정된 속도 (전송용)
+let lastSpeedUpdateTime = 0;       // 마지막 속도 업데이트 시각
+let speedSamples = [];             // 누적 평균 속도 계산용
 
 const userId = "20250001";
 const SPEED_CUTOFF = 0.3;
+
+// 신호 관련 변수
 let signalRemainingTime = 0;
 let signalState = "red";
 let allowedTime = 999;
 let countdownInterval = null;
 let previousSignal = null;
-let lastSpoken = "";
-let connected = false;
-let greenDuration = 30;
-let redDuration = 30;
 let justConnected = true;
 let twelveSecondAnnounced = false;
 let alreadyAnnouncedChange = false;
 let initialSpoken = false;
 let initialMessageSpoken = false;
 let lastCountdownSecond = null;
+
+// 음성 관련
+let lastSpoken = "";
 let isSpeaking = false;
 
+// 신호 주기 (기본값)
+let greenDuration = 30;
+let redDuration = 30;
+
+// GPS 위치 및 보정용
 let lastGPSUpdateTime = 0;
 let lastGPSLatitude = null;
 let lastGPSLongitude = null;
-let gpsSpeed = 0;
-let accelSpeed = 0;
-let gpsStationaryCount = 0;
-let sameSpeedCount = 0;
 let previousGpsSpeed = null;
-let recentSpeeds = [];
-let recentLatitudes = [];
+let sameSpeedCount = 0;
+
+// 걸음 기반 속도 측정용 변수
+let accelSpeed = 0;                // EMA 보정된 속도 (걸음 기반)
+let smoothedSpeed = 0;            // EMA 중간 결과
+let alpha = 0.3;                   // EMA 계수
+let lastStepTime = 0;             // 마지막 걸음 시각
+
+// 보폭 보정용 변수
+let dynamicStride = 0.45;         // 실시간 보폭
+let stepCount = 0;                // 보폭 계산용 걸음 수
+let gpsDistance = 0;              // 누적 GPS 이동 거리
+let gpsStart = null;              // 보폭 계산 시작 위치
 
 function speak(text) {
   if ('speechSynthesis' in window && text !== lastSpoken && !isSpeaking) {
@@ -63,39 +77,46 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 function handleDeviceMotion(event) {
   const accY = event.acceleration.y || 0;
   const now = Date.now();
-  if (Math.abs(accY) > 3.0 && now - lastSpeedUpdateTime > 1200) {
-    const stepTime = (now - lastSpeedUpdateTime) / 1000;
-    const rawSpeed = 0.45 / stepTime; // m/s
-    accelSpeed = rawSpeed;
+
+  if (Math.abs(accY) > 2.5 && now - lastStepTime > 800) {
+    const stepTime = (now - lastStepTime) / 1000;
+    lastStepTime = now;
+
+    const stepSpeed = dynamicStride / stepTime;
+    smoothedSpeed = alpha * stepSpeed + (1 - alpha) * smoothedSpeed;
+
+    accelSpeed = smoothedSpeed;
     lastSpeedUpdateTime = now;
+    stepCount++;
+
+    speedSamples.push(accelSpeed);
+
+    console.log(`🚶 걸음 감지: ${stepSpeed.toFixed(2)} m/s → EMA: ${smoothedSpeed.toFixed(2)} m/s`);
   }
 }
 
 function startUploadLoop() {
   setInterval(() => {
-    if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
-    // GPS 기반 속도 선택
-    const rawSpeed = gpsSpeed > accelSpeed ? gpsSpeed : accelSpeed;
+    const rawSpeed = accelSpeed;
 
-    // ✅ 현재 속도만 보정
-    lastSpeed = rawSpeed < 0.4 ? 0 : rawSpeed;
+    // ✅ 현재 속도: 0.3 미만이면 정지로 간주
+    lastSpeed = rawSpeed < SPEED_CUTOFF ? 0 : rawSpeed;
 
-    // ✅ 평균 속도는 계속 누적
-    if (rawSpeed >= SPEED_CUTOFF) {
-      speedSamples.push(rawSpeed);  // ⚠️ lastSpeed 말고 rawSpeed 누적!
-    }
+    // ✅ 평균 속도: 조건 없이 계속 누적
+    speedSamples.push(rawSpeed);
 
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
 
-    // ✅ 서버 전송 (평균은 누적 그대로, 현재는 보정된 값)
+    // ✅ 서버로 전송
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
-      speed: lastSpeed,         // 실시간, 0 보정 가능
-      averageSpeed: avgSpeed,   // 누적, 절대 0 보정 X
+      speed: lastSpeed,
+      averageSpeed: avgSpeed,
       location: {
         latitude: +currentLatitude.toFixed(6),
         longitude: +currentLongitude.toFixed(6)
@@ -110,70 +131,38 @@ navigator.geolocation.watchPosition(
     const lat = pos.coords.latitude;
     const lon = pos.coords.longitude;
 
-    const dt = (now - lastGPSUpdateTime) / 1000;
-    let d = 0;
-    let speedEstimate = 0;
-
-    if (
-      lastGPSLatitude !== null &&
-      lastGPSLongitude !== null &&
-      lastGPSUpdateTime !== 0 &&
-      dt > 0
-    ) {
-      // 거리 계산 (m)
-      d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
-
-      // 속도 계산 (m/s)
-      speedEstimate = d / dt;
-
-      // ✅ 정지 간주 조건:
-      // - 속도 < 0.4m/s (거의 정지)
-      // - 변동폭 < 0.2m/s (거의 동일)
-      if (
-        speedEstimate < 0.4 &&
-        previousGpsSpeed !== null &&
-        Math.abs(previousGpsSpeed - speedEstimate) < 0.2
-      ) {
-        sameSpeedCount++;
-      } else {
-        sameSpeedCount = 0;
-      }
-
-      previousGpsSpeed = speedEstimate;
-
-      // ✅ 3회 연속 정지 조건 만족 → GPS 속도 0으로 처리
-      if (sameSpeedCount >= 3) {
-        gpsSpeed = 0;
-        sameSpeedCount = 0; // 초기화
-      } else {
-        gpsSpeed = speedEstimate;
-      }
+    if (!gpsStart) {
+      gpsStart = { lat, lon, time: now };
     } else {
-      gpsSpeed = 0;
+      const d = calculateDistance(gpsStart.lat, gpsStart.lon, lat, lon);
+      gpsDistance = d;
     }
 
-    // 위치 저장
+    // 보폭 보정
+    if (now - gpsStart.time > 10000 && stepCount > 2) {
+      const newStride = gpsDistance / stepCount;
+      if (newStride >= 0.3 && newStride <= 1.2) {
+        dynamicStride = newStride;
+        console.log(`📏 보폭 업데이트됨: ${dynamicStride.toFixed(2)} m`);
+      }
+      gpsStart = null;
+      gpsDistance = 0;
+      stepCount = 0;
+    }
+
     lastGPSLatitude = lat;
     lastGPSLongitude = lon;
     lastGPSUpdateTime = now;
     currentLatitude = lat;
     currentLongitude = lon;
 
-    // 화면 출력
     document.getElementById("lat").textContent = currentLatitude.toFixed(6);
     document.getElementById("lon").textContent = currentLongitude.toFixed(6);
-
-    // 디버깅 로그
-    console.log(
-      "📍 거리:", d.toFixed(3),
-      "| 추정속도:", speedEstimate.toFixed(3),
-      "| gpsSpeed:", gpsSpeed.toFixed(3),
-      "| 동일속도횟수:", sameSpeedCount
-    );
   },
   (err) => console.warn("❌ 위치 추적 실패:", err.message),
   { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
 );
+
 
 
 function getSignalStateByClock() {
