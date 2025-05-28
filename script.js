@@ -89,8 +89,6 @@ function handleDeviceMotion(event) {
     lastSpeedUpdateTime = now;
     stepCount++;
 
-    speedSamples.push(accelSpeed);
-
     console.log(`🚶 걸음 감지: ${stepSpeed.toFixed(2)} m/s → EMA: ${smoothedSpeed.toFixed(2)} m/s`);
   }
 }
@@ -101,17 +99,14 @@ function startUploadLoop() {
 
     const rawSpeed = accelSpeed;
 
-    // ✅ 현재 속도: 0.3 미만이면 정지로 간주
     lastSpeed = rawSpeed < SPEED_CUTOFF ? 0 : rawSpeed;
 
-    // ✅ 평균 속도: 조건 없이 계속 누적
     speedSamples.push(rawSpeed);
 
     const avgSpeed = speedSamples.length > 0
       ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
       : 0.0;
 
-    // ✅ 서버로 전송
     socket.send(JSON.stringify({
       type: "web_data",
       id: userId,
@@ -122,9 +117,10 @@ function startUploadLoop() {
         longitude: +currentLongitude.toFixed(6)
       }
     }));
-  }, 1000);
-}
 
+    console.log("📤 전송됨:", lastSpeed.toFixed(2), "m/s", "| 평균:", avgSpeed.toFixed(2), "m/s");
+  }, 2000);
+}
 navigator.geolocation.watchPosition(
   (pos) => {
     const now = Date.now();
@@ -138,7 +134,6 @@ navigator.geolocation.watchPosition(
       gpsDistance = d;
     }
 
-    // 보폭 보정
     if (now - gpsStart.time > 10000 && stepCount > 2) {
       const newStride = gpsDistance / stepCount;
       if (newStride >= 0.3 && newStride <= 1.2) {
@@ -263,31 +258,6 @@ function startCountdown() {
   }, 1000);
 }
 
-function startUploadLoop() {
-  setInterval(() => {
-    if (!socket || socket.readyState !== WebSocket.OPEN || connected) return;
-
-    const now = Date.now();
-    const isStale = now - lastSpeedUpdateTime > 1000;
-    lastSpeed = gpsSpeed >= SPEED_CUTOFF ? gpsSpeed : accelSpeed;
-    if (lastSpeed >= SPEED_CUTOFF) speedSamples.push(lastSpeed);
-
-    const avgSpeed = speedSamples.length > 0
-      ? +(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length).toFixed(2)
-      : 0.0;
-
-    socket.send(JSON.stringify({
-      type: "web_data",
-      id: userId,
-      speed: lastSpeed,
-      averageSpeed: avgSpeed,
-      location: {
-        latitude: +currentLatitude.toFixed(6),
-        longitude: +currentLongitude.toFixed(6)
-      }
-    }));
-  }, 1000);
-}
 
 function handleDeviceMotion(event) {
   const accY = event.acceleration.y || 0;
@@ -302,42 +272,32 @@ function handleDeviceMotion(event) {
 function connect() {
   socket = new WebSocket("wss://041ba76b-1866-418b-8526-3bb61ab0c719-00-2dvb0ldaplvu2.sisko.replit.dev/");
   socket.onopen = () => {
+    console.log("✅ WebSocket 연결 완료");
     socket.send(JSON.stringify({ type: "register", id: userId, clientType: "web" }));
     startUploadLoop();
     speak("보행자 시스템에 연결되었습니다.");
   };
   socket.onmessage = (event) => {
     const data = JSON.parse(event.data);
+    console.log("📨 서버 응답:", data);
     if (data.type === "crossing_result" && data.webUserId === userId) {
-      connected = true;
-      justConnected = true;
-      initialSpoken = false;
-      initialMessageSpoken = false;
       allowedTime = data.allowedTime;
       greenDuration = data.greenDuration || greenDuration;
       redDuration = data.redDuration || redDuration;
       document.getElementById("radarAnimation").style.display = "none";
       document.getElementById("signalBox").style.display = "block";
+      justConnected = true;
+      initialSpoken = false;
+      initialMessageSpoken = false;
       startCountdown();
       updateInfoDisplay();
     }
   };
   socket.onerror = (err) => {
-    console.error("❌ WebSocket 연결 실패:", err);
+    console.error("❌ WebSocket 오류:", err);
   };
 }
 
-function updateInfoDisplay() {
-  const avg = speedSamples.length > 0
-    ? Math.floor(speedSamples.reduce((a, b) => a + b, 0) / speedSamples.length)
-    : 0;
-  document.getElementById("infoBox").style.display = "block";
-  document.getElementById("info").innerHTML =
-    `현재 속도: ${Math.floor(lastSpeed)} km/h<br>` +
-    `누적 평균 속도: ${avg} km/h<br>` +
-    `위도: ${currentLatitude.toFixed(6)}<br>` +
-    `경도: ${currentLongitude.toFixed(6)}`;
-}
 document.getElementById("requestPermissionButton").addEventListener("click", async () => {
   if (typeof DeviceMotionEvent?.requestPermission === "function") {
     try {
@@ -364,27 +324,6 @@ document.getElementById("requestPermissionButton").addEventListener("click", asy
       document.getElementById("requestPermissionButton").style.display = "none";
       document.getElementById("radarAnimation").style.display = "block";
       connect();
-      navigator.geolocation.watchPosition(
-        (pos) => {
-          const now = Date.now();
-          const lat = pos.coords.latitude;
-          const lon = pos.coords.longitude;
-          if (lastGPSLatitude !== null && lastGPSLongitude !== null && lastGPSUpdateTime !== 0) {
-            const dt = (now - lastGPSUpdateTime) / 1000;
-            const d = calculateDistance(lastGPSLatitude, lastGPSLongitude, lat, lon);
-            gpsSpeed = d / dt * 3.6;
-          }
-          lastGPSLatitude = lat;
-          lastGPSLongitude = lon;
-          lastGPSUpdateTime = now;
-          currentLatitude = lat;
-          currentLongitude = lon;
-          document.getElementById("lat").textContent = currentLatitude.toFixed(6);
-          document.getElementById("lon").textContent = currentLongitude.toFixed(6);
-        },
-        (err) => console.warn("❌ 위치 추적 실패:", err.message),
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
       window.addEventListener("devicemotion", handleDeviceMotion, true);
     },
     (err) => {
