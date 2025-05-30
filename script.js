@@ -289,7 +289,8 @@ function connect() {
 
       startCountdown();
       updateInfoDisplay();  
-  }
+    }
+  };
   
   socket.onerror = (err) => {
     console.error("WebSocket 오류:", err);
@@ -355,4 +356,4 @@ document.getElementById("mypageBtn").addEventListener("click", () => {
   document.getElementById("homePage").style.display = "none";
   document.getElementById("mypage").style.display = "block";
 });
-}
+
